@@ -135,13 +135,13 @@ export function getLifecycleActionLabel(action: string | null | undefined): stri
 export function getLifecycleActionIcon(action: string | null | undefined): string {
   switch (action) {
     case LifecycleAction.CREATED:
-      return '+'
+      return '📋'
     case LifecycleAction.RESCHEDULED:
       return '🔄'
     case LifecycleAction.REASSIGNED:
       return '👤'
     case LifecycleAction.CANCELLED:
-      return '✕'
+      return '❌'
     default:
       return '•'
   }

@@ -353,13 +353,13 @@ export function BookingDetailsPage({ bookingUid }: BookingDetailsPageProps) {
             {item.lifecycle_events.length === 0 ? (
               <p className="muted">Нет событий</p>
             ) : (
-              <ol className="timeline">
+              <ul className="list events-list">
                 {[...item.lifecycle_events]
                   .sort((a, b) => new Date(b.occurred_at).getTime() - new Date(a.occurred_at).getTime())
                   .map((event) => (
-                    <li key={event.id} className="timeline-item">
+                    <li key={event.id}>
                       <div>
-                        <span className="event-status-icon is-neutral" aria-hidden="true">
+                        <span aria-hidden="true">
                           {getLifecycleActionIcon(event.action)}
                         </span>{' '}
                         <strong>{getLifecycleActionLabel(event.action)}</strong>
@@ -385,7 +385,7 @@ export function BookingDetailsPage({ bookingUid }: BookingDetailsPageProps) {
                       {getLifecycleDetails(event, timeZone)}
                     </li>
                   ))}
-              </ol>
+              </ul>
             )}
           </article>
 
@@ -501,7 +501,7 @@ export function BookingDetailsPage({ bookingUid }: BookingDetailsPageProps) {
                 {item.chat_events.map((event) => (
                   <li key={event.id}>
                     <div>
-                      <span className="chat-event-icon" aria-hidden="true">
+                      <span aria-hidden="true">
                         {getChatEventIcon(event.chat_event_type)}
                       </span>{' '}
                       <span className="tag"><UserInfo userId={event.participant?.user_id} variant="name" /></span>

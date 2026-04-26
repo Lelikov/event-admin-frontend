@@ -11,30 +11,54 @@ import {
 type Props = {
   userId: string
   currentEmail: string
+  bookingUid?: string
   onClose: () => void
   onSuccess: () => void
 }
 
-export function EmailChangeModal({ userId, currentEmail, onClose, onSuccess }: Props) {
+const ERROR_MESSAGES: Record<string, string> = {
+  'Email already in use by another client': 'Этот email уже используется другим клиентом',
+  'User not found': 'Пользователь не найден',
+  'Only client emails can be changed': 'Можно изменить только email клиента',
+  'New email is the same as current email': 'Новый email совпадает с текущим',
+}
+
+function translateError(message: string): string {
+  return ERROR_MESSAGES[message] ?? message
+}
+
+export function EmailChangeModal({ userId, currentEmail, bookingUid, onClose, onSuccess }: Props) {
   const { timeZone } = useTimeZone()
-  const [newEmail, setNewEmail] = useState('')
+  const [newEmail, setNewEmail] = useState(currentEmail)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
   const [changelog, setChangelog] = useState<EmailChangelogEntry[]>([])
   const [changelogLoading, setChangelogLoading] = useState(true)
+  const [confirmReassign, setConfirmReassign] = useState(false)
 
   useEffect(() => {
+    let cancelled = false
     setChangelogLoading(true)
     getEmailChangelog(userId)
-      .then((data) => setChangelog(data.items))
-      .catch(() => setChangelog([]))
-      .finally(() => setChangelogLoading(false))
+      .then((data) => {
+        if (!cancelled) setChangelog(data.items)
+      })
+      .catch(() => {
+        if (!cancelled) setChangelog([])
+      })
+      .finally(() => {
+        if (!cancelled) setChangelogLoading(false)
+      })
+    return () => {
+      cancelled = true
+    }
   }, [userId])
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
     setError(null)
+    setConfirmReassign(false)
 
     const trimmed = newEmail.trim().toLowerCase()
     if (!trimmed) {
@@ -56,13 +80,23 @@ export function EmailChangeModal({ userId, currentEmail, onClose, onSuccess }: P
       }, 1500)
     } catch (err) {
       if (err instanceof ApiError) {
-        setError(err.message)
+        if (err.status === 409 && bookingUid) {
+          setConfirmReassign(true)
+          return
+        }
+        setError(translateError(err.message))
       } else {
         setError('Не удалось отправить запрос')
       }
     } finally {
       setSubmitting(false)
     }
+  }
+
+  function handleConfirmReassign() {
+    // TODO: implement booking client reassignment via new endpoint
+    setConfirmReassign(false)
+    setError('Переназначение клиента пока не реализовано')
   }
 
   return (
@@ -83,6 +117,28 @@ export function EmailChangeModal({ userId, currentEmail, onClose, onSuccess }: P
 
           {success ? (
             <p className="success-text">Запрос на изменение отправлен</p>
+          ) : confirmReassign ? (
+            <div>
+              <p>
+                Клиент с email <strong>{newEmail.trim().toLowerCase()}</strong> уже существует.
+                Хотите назначить эту встречу данному клиенту?
+              </p>
+              <p className="muted" style={{ fontSize: '0.85rem', marginTop: '0.5rem' }}>
+                Ранее отправленные уведомления на старый email останутся без изменений.
+              </p>
+              <div className="inline-actions" style={{ marginTop: '1rem' }}>
+                <button type="button" onClick={handleConfirmReassign}>
+                  Да, назначить
+                </button>
+                <button
+                  type="button"
+                  className="secondary"
+                  onClick={() => setConfirmReassign(false)}
+                >
+                  Отмена
+                </button>
+              </div>
+            </div>
           ) : (
             <form onSubmit={handleSubmit}>
               <label className="field">

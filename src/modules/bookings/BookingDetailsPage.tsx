@@ -594,6 +594,7 @@ export function BookingDetailsPage({ bookingUid }: BookingDetailsPageProps) {
       <EmailChangeModal
         userId={editingClientEmail.id}
         currentEmail={editingClientEmail.email}
+        bookingUid={bookingUid}
         onClose={() => setEditingClientEmail(null)}
         onSuccess={() => {
           setEditingClientEmail(null)

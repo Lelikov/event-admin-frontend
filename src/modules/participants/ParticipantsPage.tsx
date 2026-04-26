@@ -3,7 +3,6 @@ import { getUsers, type UserItem } from './participantsApi.ts'
 import { ApiError } from '../shared/api.ts'
 import { formatDateTime } from '../shared/format.ts'
 import { useTimeZone } from '../settings/TimeZoneContext.tsx'
-import { EmailChangeModal } from './EmailChangeModal.tsx'
 
 const PAGE_SIZE = 50
 
@@ -17,7 +16,6 @@ export function ParticipantsPage() {
   const { timeZone } = useTimeZone()
   const [items, setItems] = useState<UserItem[]>([])
   const [total, setTotal] = useState(0)
-  const [editingUser, setEditingUser] = useState<{ id: string; email: string } | null>(null)
   const [offset, setOffset] = useState(0)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -64,7 +62,6 @@ export function ParticipantsPage() {
   const totalPages = Math.ceil(total / PAGE_SIZE)
 
   return (
-    <>
     <section className="stack">
       <header className="page-header">
         <div>
@@ -131,7 +128,6 @@ export function ParticipantsPage() {
                     <th>Роль</th>
                     <th>Часовой пояс</th>
                     <th>Дата регистрации</th>
-                    <th></th>
                   </tr>
                 </thead>
                 <tbody>
@@ -147,17 +143,6 @@ export function ParticipantsPage() {
                       </td>
                       <td>{item.time_zone ?? <span className="muted">—</span>}</td>
                       <td>{formatDateTime(item.created_at, timeZone)}</td>
-                      <td>
-                        {item.role === 'client' && (
-                          <button
-                            type="button"
-                            className="secondary small"
-                            onClick={() => setEditingUser({ id: item.id, email: item.email })}
-                          >
-                            Изменить email
-                          </button>
-                        )}
-                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -188,14 +173,5 @@ export function ParticipantsPage() {
         )}
       </article>
     </section>
-    {editingUser && (
-      <EmailChangeModal
-        userId={editingUser.id}
-        currentEmail={editingUser.email}
-        onClose={() => setEditingUser(null)}
-        onSuccess={() => void load(emailInput || undefined, selectedRole || undefined, currentPage)}
-      />
-    )}
-    </>
   )
 }

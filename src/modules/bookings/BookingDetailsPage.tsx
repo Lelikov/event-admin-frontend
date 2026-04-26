@@ -16,6 +16,8 @@ import {
 } from './statuses.ts'
 import type { BookingDetails, LifecycleEvent, VideoEvent } from './types.ts'
 import { UserInfo } from '../shared/UserInfo.tsx'
+import { EmailChangeModal } from '../participants/EmailChangeModal.tsx'
+import { getCachedUser } from '../shared/userBatchLoader.ts'
 
 type BookingDetailsPageProps = {
   bookingUid: string
@@ -270,6 +272,20 @@ export function BookingDetailsPage({ bookingUid }: BookingDetailsPageProps) {
   const [item, setItem] = useState<BookingDetails | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [editingClientEmail, setEditingClientEmail] = useState<{ id: string; email: string } | null>(null)
+
+  async function loadBookingDetails() {
+    setLoading(true)
+    setError(null)
+    try {
+      const response = await getBookingDetails(bookingUid)
+      setItem(response)
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Не удалось загрузить детали бронирования')
+    } finally {
+      setLoading(false)
+    }
+  }
 
   useEffect(() => {
     let cancelled = false
@@ -300,6 +316,7 @@ export function BookingDetailsPage({ bookingUid }: BookingDetailsPageProps) {
   }, [bookingUid])
 
   return (
+    <>
     <section className="stack">
       <header className="page-header">
         <div>
@@ -344,7 +361,26 @@ export function BookingDetailsPage({ bookingUid }: BookingDetailsPageProps) {
             </div>
             <div>
               <h3>Текущий клиент</h3>
-              <p><UserInfo userId={item.current_client_participant?.user_id} /></p>
+              <p>
+                <UserInfo userId={item.current_client_participant?.user_id} />
+                {item.current_client_participant?.user_id && (
+                  <button
+                    type="button"
+                    className="secondary small"
+                    onClick={() => {
+                      if (!item.current_client_participant?.user_id) return
+                      const cached = getCachedUser(item.current_client_participant.user_id)
+                      setEditingClientEmail({
+                        id: item.current_client_participant.user_id,
+                        email: cached?.email ?? '',
+                      })
+                    }}
+                    style={{ marginLeft: '0.5rem' }}
+                  >
+                    Изменить email
+                  </button>
+                )}
+              </p>
             </div>
           </article>
 
@@ -554,5 +590,17 @@ export function BookingDetailsPage({ bookingUid }: BookingDetailsPageProps) {
         </>
       )}
     </section>
+    {editingClientEmail && (
+      <EmailChangeModal
+        userId={editingClientEmail.id}
+        currentEmail={editingClientEmail.email}
+        onClose={() => setEditingClientEmail(null)}
+        onSuccess={() => {
+          setEditingClientEmail(null)
+          void loadBookingDetails()
+        }}
+      />
+    )}
+    </>
   )
 }

@@ -4,6 +4,7 @@ import { formatDateTime } from '../shared/format.ts'
 import { useTimeZone } from '../settings/TimeZoneContext.tsx'
 import {
   getEmailChangelog,
+  reassignBookingClient,
   requestEmailChange,
   type EmailChangelogEntry,
 } from './emailChangeApi.ts'
@@ -33,6 +34,7 @@ export function EmailChangeModal({ userId, currentEmail, bookingUid, onClose, on
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
+  const [successMessage, setSuccessMessage] = useState('Запрос на изменение отправлен')
   const [changelog, setChangelog] = useState<EmailChangelogEntry[]>([])
   const [changelogLoading, setChangelogLoading] = useState(true)
   const [confirmReassign, setConfirmReassign] = useState(false)
@@ -73,6 +75,7 @@ export function EmailChangeModal({ userId, currentEmail, bookingUid, onClose, on
     setSubmitting(true)
     try {
       await requestEmailChange(userId, trimmed)
+      setSuccessMessage('Запрос на изменение email отправлен')
       setSuccess(true)
       setTimeout(() => {
         onSuccess()
@@ -93,10 +96,28 @@ export function EmailChangeModal({ userId, currentEmail, bookingUid, onClose, on
     }
   }
 
-  function handleConfirmReassign() {
-    // TODO: implement booking client reassignment via new endpoint
-    setConfirmReassign(false)
-    setError('Переназначение клиента пока не реализовано')
+  async function handleConfirmReassign() {
+    setSubmitting(true)
+    setError(null)
+    try {
+      await reassignBookingClient(bookingUid!, newEmail.trim().toLowerCase())
+      setSuccessMessage('Клиент встречи переназначен')
+      setSuccess(true)
+      setConfirmReassign(false)
+      setTimeout(() => {
+        onSuccess()
+        onClose()
+      }, 1500)
+    } catch (err) {
+      setConfirmReassign(false)
+      if (err instanceof ApiError) {
+        setError(translateError(err.message))
+      } else {
+        setError('Не удалось переназначить клиента')
+      }
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   return (
@@ -116,7 +137,7 @@ export function EmailChangeModal({ userId, currentEmail, bookingUid, onClose, on
           </div>
 
           {success ? (
-            <p className="success-text">Запрос на изменение отправлен</p>
+            <p className="success-text">{successMessage}</p>
           ) : confirmReassign ? (
             <div>
               <p>

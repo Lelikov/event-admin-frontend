@@ -50,6 +50,7 @@ export type NotificationStatusHistoryEntry = {
 export type EmailNotification = {
   id: number
   participant: Participant | null
+  recipient_email: string | null
   trigger_event: string | null
   sent_at: string | null
   last_status: string | null
@@ -59,6 +60,7 @@ export type EmailNotification = {
 export type TelegramNotification = {
   id: number
   participant: Participant | null
+  recipient_email: string | null
   trigger_event: string | null
   source_event_id: string
   sent_at: string

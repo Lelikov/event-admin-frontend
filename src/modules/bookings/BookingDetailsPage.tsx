@@ -443,7 +443,13 @@ export function BookingDetailsPage({ bookingUid }: BookingDetailsPageProps) {
                   <tbody>
                     {item.email_notifications.map((notification) => (
                       <tr key={notification.id}>
-                        <td><UserInfo userId={notification.participant?.user_id} variant="inline" /></td>
+                        <td>
+                          {notification.recipient_email ? (
+                            <span>{notification.recipient_email}</span>
+                          ) : (
+                            <UserInfo userId={notification.participant?.user_id} variant="inline" />
+                          )}
+                        </td>
                         <td>{getTriggerEventLabel(notification.trigger_event)}</td>
                         <td>{formatDateTime(notification.sent_at, timeZone)}</td>
                         <td>
@@ -498,7 +504,13 @@ export function BookingDetailsPage({ bookingUid }: BookingDetailsPageProps) {
                   <tbody>
                     {item.telegram_notifications.map((notification) => (
                       <tr key={notification.id}>
-                        <td><UserInfo userId={notification.participant?.user_id} variant="inline" /></td>
+                        <td>
+                          {notification.recipient_email ? (
+                            <span>{notification.recipient_email}</span>
+                          ) : (
+                            <UserInfo userId={notification.participant?.user_id} variant="inline" />
+                          )}
+                        </td>
                         <td>{getTriggerEventLabel(notification.trigger_event)}</td>
                         <td>{formatDateTime(notification.sent_at, timeZone)}</td>
                         <td>{formatDateTime(notification.created_at, timeZone)}</td>

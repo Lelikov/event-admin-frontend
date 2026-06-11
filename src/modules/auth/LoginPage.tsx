@@ -5,7 +5,14 @@ import { login } from './authApi.ts'
 import { useAuth } from './AuthContext.tsx'
 
 const ENABLE_DEV_BYPASS_LOGIN = import.meta.env.VITE_ENABLE_DEV_BYPASS_LOGIN === 'true'
-const DEV_BYPASS_JWT = import.meta.env.VITE_DEV_BYPASS_JWT ?? 'dev-bypass-jwt-token'
+const DEV_BYPASS_JWT: string = import.meta.env.VITE_DEV_BYPASS_JWT ?? ''
+
+function translateLoginError(err: unknown): string {
+  if (!(err instanceof ApiError)) return 'Не удалось выполнить вход'
+  if (err.status === 401) return 'Неверный email, пароль или TOTP-код'
+  if (err.status === 429) return 'Слишком много неудачных попыток входа. Попробуйте позже.'
+  return err.message
+}
 
 export function LoginPage() {
   const { loginWithToken } = useAuth()
@@ -35,7 +42,7 @@ export function LoginPage() {
       loginWithToken(response.access_token, response.role)
       navigateTo('/dashboard', { replace: true })
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Не удалось выполнить вход')
+      setError(translateLoginError(err))
     } finally {
       setLoading(false)
     }

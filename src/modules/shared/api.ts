@@ -1,6 +1,13 @@
-import { getJwtToken } from '../auth/storage.ts'
+import { getJwtToken, removeJwtToken } from '../auth/storage.ts'
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? ''
+
+if (!import.meta.env.DEV && !API_BASE_URL) {
+  console.warn(
+    'VITE_API_BASE_URL is empty: API requests will be sent relative to the static host. ' +
+      'Set VITE_API_BASE_URL at build time unless the SPA is served behind the same origin as event-admin.',
+  )
+}
 
 export class ApiError extends Error {
   status: number
@@ -31,10 +38,12 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
     headers['Content-Type'] = 'application/json'
   }
 
+  let tokenAttached = false
   if (auth) {
     const token = getJwtToken()
     if (token) {
       headers.Authorization = `Bearer ${token}`
+      tokenAttached = true
     }
   }
 
@@ -58,9 +67,12 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
         ? String(payload.detail)
         : `Ошибка запроса (${response.status})`
     const error = new ApiError(message, response.status, payload)
-    if (error.status === 401) {
-      localStorage.removeItem('event_admin_jwt')
-      localStorage.removeItem('event_admin_role')
+    // A 401 on a request that carried a token means the JWT is expired or
+    // revoked (event-admin tokens live 60 minutes): clear the session and
+    // force a re-login. Requests without a token (e.g. POST /auth/login
+    // itself) must NOT redirect, otherwise the login error is never shown.
+    if (error.status === 401 && tokenAttached) {
+      removeJwtToken()
       window.location.href = '/login'
     }
     throw error

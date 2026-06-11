@@ -1,24 +1,9 @@
-import {
-  createContext,
-  useCallback,
-  useContext,
-  useMemo,
-  useState,
-  type ReactNode,
-} from 'react'
+import { useCallback, useMemo, useState, type ReactNode } from 'react'
 import { clearUserCache } from '../shared/userBatchLoader.ts'
 import { logoutRequest } from './authApi.ts'
+import { AuthContext, type AuthContextValue } from './context.ts'
 import { isTokenExpired } from './jwt.ts'
 import { getJwtToken, removeJwtToken, setJwtToken } from './storage.ts'
-
-type AuthContextValue = {
-  isAuthenticated: boolean
-  jwtToken: string | null
-  loginWithToken: (token: string) => void
-  logout: () => Promise<void>
-}
-
-const AuthContext = createContext<AuthContextValue | null>(null)
 
 type AuthProviderProps = {
   children: ReactNode
@@ -66,12 +51,4 @@ export function AuthProvider({ children }: AuthProviderProps) {
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
-}
-
-export function useAuth(): AuthContextValue {
-  const ctx = useContext(AuthContext)
-  if (!ctx) {
-    throw new Error('useAuth must be used within AuthProvider')
-  }
-  return ctx
 }

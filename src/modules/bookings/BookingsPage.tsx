@@ -6,7 +6,7 @@ import { ApiError } from '../shared/api.ts'
 import { navigateTo } from '../shared/routing.ts'
 import { UserInfo } from '../shared/UserInfo.tsx'
 import { BOOKING_STATUS_FILTER_OPTIONS, getBookingStatusLabel } from './statuses.ts'
-import { useTimeZone } from '../settings/TimeZoneContext.tsx'
+import { useTimeZone } from '../settings/useTimeZone.ts'
 import { ParticipantPicker, type PickedParticipant } from '../shared/ParticipantPicker.tsx'
 import { StatusFilter } from '../shared/StatusFilter.tsx'
 

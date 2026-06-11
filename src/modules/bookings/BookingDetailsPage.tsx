@@ -2,7 +2,7 @@ import { useEffect, useState, type ReactNode } from 'react'
 import { ApiError } from '../shared/api.ts'
 import { formatDateTime } from '../shared/format.ts'
 import { navigateTo } from '../shared/routing.ts'
-import { useTimeZone } from '../settings/TimeZoneContext.tsx'
+import { useTimeZone } from '../settings/useTimeZone.ts'
 import { getBookingDetails } from './bookingsApi.ts'
 import {
   getBookingStatusLabel,

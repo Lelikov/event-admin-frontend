@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { AdminLayout } from './modules/app/AdminLayout.tsx'
 import { LoginPage } from './modules/auth/LoginPage.tsx'
-import { useAuth } from './modules/auth/AuthContext.tsx'
+import { useAuth } from './modules/auth/useAuth.ts'
 import { BookingDetailsPage } from './modules/bookings/BookingDetailsPage.tsx'
 import { BookingsPage } from './modules/bookings/BookingsPage.tsx'
 import { DashboardPage } from './modules/bookings/DashboardPage.tsx'

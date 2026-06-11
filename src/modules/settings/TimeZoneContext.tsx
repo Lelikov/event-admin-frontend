@@ -1,27 +1,32 @@
-import {
-  createContext,
-  useContext,
-  useMemo,
-  useState,
-  type ReactNode,
-} from 'react'
+import { useMemo, useState, type ReactNode } from 'react'
+import { TimeZoneContext, type TimeZoneContextValue } from './context.ts'
 
 const TIME_ZONE_STORAGE_KEY = 'event_admin_time_zone'
-
-type TimeZoneContextValue = {
-  timeZone: string
-  availableTimeZones: string[]
-  setTimeZone: (timeZone: string) => void
-}
-
-const TimeZoneContext = createContext<TimeZoneContextValue | null>(null)
 
 function getDefaultTimeZone(): string {
   return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'
 }
 
+function isValidTimeZone(timeZone: string): boolean {
+  try {
+    new Intl.DateTimeFormat('ru-RU', { timeZone })
+    return true
+  } catch {
+    return false
+  }
+}
+
 function getStoredTimeZone(): string {
-  return localStorage.getItem(TIME_ZONE_STORAGE_KEY) ?? getDefaultTimeZone()
+  const stored = localStorage.getItem(TIME_ZONE_STORAGE_KEY)
+  if (stored && isValidTimeZone(stored)) {
+    return stored
+  }
+  // A corrupt stored value would make Intl.DateTimeFormat throw on every
+  // render; drop it and fall back to the browser default.
+  if (stored) {
+    localStorage.removeItem(TIME_ZONE_STORAGE_KEY)
+  }
+  return getDefaultTimeZone()
 }
 
 function getAvailableTimeZones(): string[] {
@@ -58,12 +63,4 @@ export function TimeZoneProvider({ children }: TimeZoneProviderProps) {
   )
 
   return <TimeZoneContext.Provider value={value}>{children}</TimeZoneContext.Provider>
-}
-
-export function useTimeZone(): TimeZoneContextValue {
-  const context = useContext(TimeZoneContext)
-  if (!context) {
-    throw new Error('useTimeZone must be used within TimeZoneProvider')
-  }
-  return context
 }

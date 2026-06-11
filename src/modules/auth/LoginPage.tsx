@@ -2,7 +2,7 @@ import { type FormEvent, useMemo, useState } from 'react'
 import { ApiError } from '../shared/api.ts'
 import { navigateTo } from '../shared/routing.ts'
 import { login } from './authApi.ts'
-import { useAuth } from './AuthContext.tsx'
+import { useAuth } from './useAuth.ts'
 
 const ENABLE_DEV_BYPASS_LOGIN = import.meta.env.VITE_ENABLE_DEV_BYPASS_LOGIN === 'true'
 const DEV_BYPASS_JWT: string = import.meta.env.VITE_DEV_BYPASS_JWT ?? ''

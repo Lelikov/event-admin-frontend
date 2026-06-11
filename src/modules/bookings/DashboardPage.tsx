@@ -5,7 +5,7 @@ import { formatDateTime } from '../shared/format.ts'
 import { ApiError } from '../shared/api.ts'
 import { navigateTo } from '../shared/routing.ts'
 import { getBookingStatusLabel, getNotificationStatusLabel } from './statuses.ts'
-import { useTimeZone } from '../settings/TimeZoneContext.tsx'
+import { useTimeZone } from '../settings/useTimeZone.ts'
 import { UserInfo } from '../shared/UserInfo.tsx'
 
 export function DashboardPage() {

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
-import { useAuth } from '../auth/AuthContext.tsx'
+import { useAuth } from '../auth/useAuth.ts'
 import { navigateTo } from '../shared/routing.ts'
-import { useTimeZone } from '../settings/TimeZoneContext.tsx'
+import { useTimeZone } from '../settings/useTimeZone.ts'
 
 type AdminLayoutProps = {
   pathname: string

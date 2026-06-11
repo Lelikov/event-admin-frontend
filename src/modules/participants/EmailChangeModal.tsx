@@ -2,7 +2,7 @@ import { type FormEvent, useEffect, useState } from 'react'
 import { ApiError } from '../shared/api.ts'
 import { formatDateTime } from '../shared/format.ts'
 import { invalidateUser } from '../shared/userBatchLoader.ts'
-import { useTimeZone } from '../settings/TimeZoneContext.tsx'
+import { useTimeZone } from '../settings/useTimeZone.ts'
 import {
   getEmailChangelog,
   reassignBookingClient,

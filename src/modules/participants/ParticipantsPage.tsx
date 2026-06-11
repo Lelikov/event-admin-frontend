@@ -2,7 +2,7 @@ import { type FormEvent, useEffect, useState } from 'react'
 import { getUsers, type UserItem } from './participantsApi.ts'
 import { ApiError } from '../shared/api.ts'
 import { formatDateTime } from '../shared/format.ts'
-import { useTimeZone } from '../settings/TimeZoneContext.tsx'
+import { useTimeZone } from '../settings/useTimeZone.ts'
 
 const PAGE_SIZE = 50
 

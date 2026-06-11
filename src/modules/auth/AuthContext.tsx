@@ -7,13 +7,13 @@ import {
   type ReactNode,
 } from 'react'
 import { logoutRequest } from './authApi.ts'
-import { getJwtToken, getUserRole, removeJwtToken, removeUserRole, setJwtToken, setUserRole } from './storage.ts'
+import { isTokenExpired } from './jwt.ts'
+import { getJwtToken, removeJwtToken, setJwtToken } from './storage.ts'
 
 type AuthContextValue = {
   isAuthenticated: boolean
   jwtToken: string | null
-  role: string | null
-  loginWithToken: (token: string, role: string) => void
+  loginWithToken: (token: string) => void
   logout: () => Promise<void>
 }
 
@@ -23,15 +23,21 @@ type AuthProviderProps = {
   children: ReactNode
 }
 
-export function AuthProvider({ children }: AuthProviderProps) {
-  const [jwtToken, setJwtTokenState] = useState<string | null>(() => getJwtToken())
-  const [role, setRoleState] = useState<string | null>(() => getUserRole())
+function getValidStoredToken(): string | null {
+  const token = getJwtToken()
+  if (token && isTokenExpired(token)) {
+    removeJwtToken()
+    return null
+  }
+  return token
+}
 
-  const loginWithToken = useCallback((token: string, userRole: string) => {
+export function AuthProvider({ children }: AuthProviderProps) {
+  const [jwtToken, setJwtTokenState] = useState<string | null>(() => getValidStoredToken())
+
+  const loginWithToken = useCallback((token: string) => {
     setJwtToken(token)
-    setUserRole(userRole)
     setJwtTokenState(token)
-    setRoleState(userRole)
   }, [])
 
   const logout = useCallback(async () => {
@@ -43,9 +49,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       // Even if the backend is unreachable, clear the local session.
     } finally {
       removeJwtToken()
-      removeUserRole()
       setJwtTokenState(null)
-      setRoleState(null)
     }
   }, [])
 
@@ -53,11 +57,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
     () => ({
       isAuthenticated: Boolean(jwtToken),
       jwtToken,
-      role,
       loginWithToken,
       logout,
     }),
-    [jwtToken, role, loginWithToken, logout],
+    [jwtToken, loginWithToken, logout],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

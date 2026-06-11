@@ -12,9 +12,10 @@ type NavItem = {
   label: string
   path: string
   match: (pathname: string) => boolean
-  adminOnly?: boolean
 }
 
+// All pages require the admin role on the backend (event-admin attaches
+// require_admin to every data endpoint), so the nav is not role-filtered.
 const NAV_ITEMS: NavItem[] = [
   {
     label: 'Дашборд',
@@ -30,7 +31,6 @@ const NAV_ITEMS: NavItem[] = [
     label: 'Пользователи',
     path: '/participants',
     match: (pathname) => pathname === '/participants',
-    adminOnly: true,
   },
 ]
 
@@ -114,10 +114,8 @@ function TimeZonePicker({ timeZone, availableTimeZones, setTimeZone }: TimeZoneP
 }
 
 export function AdminLayout({ pathname, children }: AdminLayoutProps) {
-  const { logout, role } = useAuth()
+  const { logout } = useAuth()
   const { timeZone, availableTimeZones, setTimeZone } = useTimeZone()
-
-  const visibleNavItems = NAV_ITEMS.filter((item) => !item.adminOnly || role === 'admin')
 
   return (
     <div className="admin-shell">
@@ -125,11 +123,10 @@ export function AdminLayout({ pathname, children }: AdminLayoutProps) {
         <div>
           <p className="eyebrow">Event Admin</p>
           <h2>Панель управления</h2>
-          {role && <p className="muted" style={{ fontSize: 12 }}>{role === 'admin' ? 'Администратор' : 'Пользователь'}</p>}
         </div>
 
         <nav className="menu">
-          {visibleNavItems.map((item) => {
+          {NAV_ITEMS.map((item) => {
             const active = item.match(pathname)
             return (
               <button

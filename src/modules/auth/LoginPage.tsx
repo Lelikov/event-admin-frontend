@@ -39,7 +39,7 @@ export function LoginPage() {
         password,
         totp_code: totpCode.trim(),
       })
-      loginWithToken(response.access_token, response.role)
+      loginWithToken(response.access_token)
       navigateTo('/dashboard', { replace: true })
     } catch (err) {
       setError(translateLoginError(err))
@@ -97,13 +97,12 @@ export function LoginPage() {
               {loading ? 'Входим…' : 'Войти'}
             </button>
 
-            {import.meta.env.DEV && ENABLE_DEV_BYPASS_LOGIN && (
+            {import.meta.env.DEV && ENABLE_DEV_BYPASS_LOGIN && DEV_BYPASS_JWT !== '' && (
               <button
                 type="button"
                 className="secondary"
                 onClick={() => {
-                  const payload = JSON.parse(atob(DEV_BYPASS_JWT.split('.')[1]))
-                  loginWithToken(DEV_BYPASS_JWT, payload.role || 'user')
+                  loginWithToken(DEV_BYPASS_JWT)
                   navigateTo('/dashboard', { replace: true })
                 }}
                 disabled={loading}
@@ -114,7 +113,7 @@ export function LoginPage() {
           </div>
         </form>
 
-        {import.meta.env.DEV && ENABLE_DEV_BYPASS_LOGIN && (
+        {import.meta.env.DEV && ENABLE_DEV_BYPASS_LOGIN && DEV_BYPASS_JWT !== '' && (
           <p className="hint">Dev bypass включён через VITE_ENABLE_DEV_BYPASS_LOGIN=true</p>
         )}
         {error && <p className="error-text">{error}</p>}

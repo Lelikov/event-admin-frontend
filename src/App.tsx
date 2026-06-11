@@ -25,8 +25,8 @@ function App() {
 
   const route = useMemo(() => parseRoute(pathname), [pathname])
 
-  const { role } = useAuth()
-
+  // Note: there is no client-side role gate. event-admin requires the admin
+  // role on every data endpoint, so non-admin tokens cannot use the app at all.
   useEffect(() => {
     if (!isAuthenticated && route.name !== 'login') {
       navigateTo('/login', { replace: true })
@@ -35,13 +35,8 @@ function App() {
 
     if (isAuthenticated && route.name === 'login') {
       navigateTo('/dashboard', { replace: true })
-      return
     }
-
-    if (isAuthenticated && route.name === 'participants' && role !== 'admin') {
-      navigateTo('/dashboard', { replace: true })
-    }
-  }, [isAuthenticated, route.name, role])
+  }, [isAuthenticated, route.name])
 
   if (route.name === 'login') {
     return <LoginPage />

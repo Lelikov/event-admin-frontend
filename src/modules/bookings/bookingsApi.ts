@@ -10,6 +10,10 @@ export type GetBookingsFilters = {
   current_statuses?: string[]
   current_organizer_user_ids?: string[]
   current_client_user_ids?: string[]
+  // Backend defaults to limit=50 (max 500); without explicit paging the list
+  // is silently truncated, so callers should always page.
+  limit?: number
+  offset?: number
 }
 
 export function getBookings(filters?: GetBookingsFilters): Promise<BookingListItem[]> {
@@ -23,6 +27,8 @@ export function getBookings(filters?: GetBookingsFilters): Promise<BookingListIt
   filters?.current_client_user_ids?.forEach((value) =>
     params.append('current_client_user_ids', value),
   )
+  if (filters?.limit != null) params.set('limit', String(filters.limit))
+  if (filters?.offset != null) params.set('offset', String(filters.offset))
 
   const query = params.toString()
   const path = query ? `/bookings?${query}` : '/bookings'

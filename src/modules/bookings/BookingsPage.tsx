@@ -13,9 +13,12 @@ import { StatusFilter } from '../shared/StatusFilter.tsx'
 const ORGANIZER_ROLES = ['organizer']
 const CLIENT_ROLES = ['client']
 
+const PAGE_SIZE = 50
+
 export function BookingsPage() {
   const { timeZone } = useTimeZone()
   const [items, setItems] = useState<BookingListItem[]>([])
+  const [page, setPage] = useState(0)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [bookingUidsInput, setBookingUidsInput] = useState('')
@@ -30,12 +33,26 @@ export function BookingsPage() {
       .filter((v) => v.length > 0)
   }
 
-  async function load(filters?: GetBookingsFilters) {
+  function buildFilters(): GetBookingsFilters {
+    return {
+      booking_uids: parseCsv(bookingUidsInput),
+      current_statuses: selectedStatuses,
+      current_organizer_user_ids: selectedOrganizers.map((p) => p.id),
+      current_client_user_ids: selectedClients.map((p) => p.id),
+    }
+  }
+
+  async function load(filters?: GetBookingsFilters, pageIndex = 0) {
     setLoading(true)
     setError(null)
     try {
-      const response = await getBookings(filters)
+      const response = await getBookings({
+        ...filters,
+        limit: PAGE_SIZE,
+        offset: pageIndex * PAGE_SIZE,
+      })
       setItems(response)
+      setPage(pageIndex)
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Не удалось загрузить бронирования')
     } finally {
@@ -49,12 +66,7 @@ export function BookingsPage() {
 
   function handleSearch(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    void load({
-      booking_uids: parseCsv(bookingUidsInput),
-      current_statuses: selectedStatuses,
-      current_organizer_user_ids: selectedOrganizers.map((p) => p.id),
-      current_client_user_ids: selectedClients.map((p) => p.id),
-    })
+    void load(buildFilters(), 0)
   }
 
   function handleResetFilters() {
@@ -135,7 +147,11 @@ export function BookingsPage() {
 
         {!loading && !error && items.length > 0 && (
           <>
-            <p className="results-count">Найдено: {items.length}</p>
+            <p className="results-count">
+              {page === 0 && items.length < PAGE_SIZE
+                ? `Найдено: ${items.length}`
+                : `Страница ${page + 1}, записей: ${items.length}`}
+            </p>
             <div className="table-wrap">
               <table>
                 <thead>
@@ -175,6 +191,27 @@ export function BookingsPage() {
               </table>
             </div>
           </>
+        )}
+
+        {!loading && !error && (page > 0 || items.length === PAGE_SIZE) && (
+          <div className="inline-actions" style={{ marginTop: '1rem' }}>
+            <button
+              type="button"
+              className="secondary"
+              disabled={page === 0 || loading}
+              onClick={() => void load(buildFilters(), page - 1)}
+            >
+              ← Назад
+            </button>
+            <button
+              type="button"
+              className="secondary"
+              disabled={items.length < PAGE_SIZE || loading}
+              onClick={() => void load(buildFilters(), page + 1)}
+            >
+              Вперёд →
+            </button>
+          </div>
         )}
       </article>
     </section>

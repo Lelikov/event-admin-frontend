@@ -1,6 +1,7 @@
 import { type FormEvent, useEffect, useState } from 'react'
 import { ApiError } from '../shared/api.ts'
 import { formatDateTime } from '../shared/format.ts'
+import { invalidateUser } from '../shared/userBatchLoader.ts'
 import { useTimeZone } from '../settings/TimeZoneContext.tsx'
 import {
   getEmailChangelog,
@@ -75,6 +76,9 @@ export function EmailChangeModal({ userId, currentEmail, bookingUid, onClose, on
     setSubmitting(true)
     try {
       await requestEmailChange(userId, trimmed)
+      // The change is applied asynchronously via RabbitMQ; dropping the cache
+      // entry at least prevents the old email from being served indefinitely.
+      invalidateUser(userId)
       setSuccessMessage('Запрос на изменение email отправлен')
       setSuccess(true)
       setTimeout(() => {
@@ -101,6 +105,7 @@ export function EmailChangeModal({ userId, currentEmail, bookingUid, onClose, on
     setError(null)
     try {
       await reassignBookingClient(bookingUid!, newEmail.trim().toLowerCase())
+      invalidateUser(userId)
       setSuccessMessage('Клиент встречи переназначен')
       setSuccess(true)
       setConfirmReassign(false)

@@ -6,6 +6,7 @@ import {
   useState,
   type ReactNode,
 } from 'react'
+import { clearUserCache } from '../shared/userBatchLoader.ts'
 import { logoutRequest } from './authApi.ts'
 import { isTokenExpired } from './jwt.ts'
 import { getJwtToken, removeJwtToken, setJwtToken } from './storage.ts'
@@ -49,6 +50,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       // Even if the backend is unreachable, clear the local session.
     } finally {
       removeJwtToken()
+      clearUserCache()
       setJwtTokenState(null)
     }
   }, [])

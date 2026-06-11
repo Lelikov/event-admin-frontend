@@ -273,19 +273,8 @@ export function BookingDetailsPage({ bookingUid }: BookingDetailsPageProps) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [editingClientEmail, setEditingClientEmail] = useState<{ id: string; email: string } | null>(null)
-
-  async function loadBookingDetails() {
-    setLoading(true)
-    setError(null)
-    try {
-      const response = await getBookingDetails(bookingUid)
-      setItem(response)
-    } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Не удалось загрузить детали бронирования')
-    } finally {
-      setLoading(false)
-    }
-  }
+  // Bumping the counter re-runs the load effect (used after email change/reassign).
+  const [reloadCounter, setReloadCounter] = useState(0)
 
   useEffect(() => {
     let cancelled = false
@@ -313,7 +302,7 @@ export function BookingDetailsPage({ bookingUid }: BookingDetailsPageProps) {
     return () => {
       cancelled = true
     }
-  }, [bookingUid])
+  }, [bookingUid, reloadCounter])
 
   return (
     <>
@@ -610,7 +599,7 @@ export function BookingDetailsPage({ bookingUid }: BookingDetailsPageProps) {
         onClose={() => setEditingClientEmail(null)}
         onSuccess={() => {
           setEditingClientEmail(null)
-          void loadBookingDetails()
+          setReloadCounter((counter) => counter + 1)
         }}
       />
     )}

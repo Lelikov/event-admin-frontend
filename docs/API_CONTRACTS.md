@@ -1,217 +1,111 @@
 # event-admin-frontend -- API Contracts
 
-## Calls to event-admin (`VITE_API_BASE_URL`)
+Last updated: 2026-06-11 (audit-v2 fix pass)
 
-All requests go through `apiRequest()` in `src/modules/shared/api.ts:24-64`.  
-Auth: `Authorization: Bearer <JWT from localStorage>` (unless `auth: false`).
+All requests go to **event-admin** (`VITE_API_BASE_URL`) through `apiRequest()` in `src/modules/shared/api.ts`.
+Auth: `Authorization: Bearer <JWT from sessionStorage>` (unless `auth: false`).
+Global behaviour: a 401 response to a request that carried a token clears the session and redirects to `/login`; `ApiError` exposes `.status` and `.details`, with `.message` taken from the backend `detail` field when present.
+
+The `/api/users/*` endpoints below are event-admin's **authenticated proxy** to event-users (admin RBAC + caching applied by event-admin). The frontend never calls event-users directly.
+
+## Auth
 
 ### POST /auth/login
 
-- **Source**: `authApi.ts:4-9`
+- **Source**: `auth/authApi.ts`
 - **Auth**: None (`auth: false`)
-- **Request body**:
-  ```json
-  {
-    "email": "string",
-    "password": "string",
-    "totp_code": "string"
-  }
-  ```
-- **Response** (200):
-  ```json
-  {
-    "access_token": "string (JWT)",
-    "token_type": "Bearer",
-    "role": "admin | user"
-  }
-  ```
-- **Types**: `LoginPayload`, `LoginResponse` in `auth/types.ts:1-11`
+- **Request body**: `{ "email": string, "password": string, "totp_code": string }`
+- **Response 200**: `{ "access_token": string (JWT, 60-min exp), "token_type": "Bearer", "role": "admin" | "user" }` -- the role field is informational; the JWT carries the same claim. Non-admin tokens get 403 on every data endpoint.
+- **Errors**: 401 `Invalid credentials` (shown as a Russian message); 429 `Too many failed login attempts; try again later` (login throttling, translated)
 
 ### POST /auth/logout
 
-- **Source**: `authApi.ts:12-14`
+- **Source**: `auth/authApi.ts`
 - **Auth**: Bearer JWT
-- **Request body**: None
-- **Response**: 204 No Content (or ignored on failure)
+- **Response**: 204 No Content (best-effort; local session cleared regardless)
+
+## Bookings
 
 ### GET /bookings
 
-- **Source**: `bookingsApi.ts:15-31`
-- **Auth**: Bearer JWT
-- **Query params** (all optional, repeatable):
-  - `booking_uids` (string[])
-  - `current_statuses` (string[])
-  - `current_organizer_user_ids` (string[])
-  - `current_client_user_ids` (string[])
-- **Response** (200): `BookingListItem[]`
-  ```json
-  [
-    {
-      "id": "number",
-      "booking_uid": "string",
-      "first_seen_at": "ISO datetime",
-      "last_seen_at": "ISO datetime",
-      "start_time": "ISO datetime | null",
-      "end_time": "ISO datetime | null",
-      "current_status": "string | null",
-      "created_at": "ISO datetime",
-      "updated_at": "ISO datetime",
-      "organizer_participant": { "user_id": "string | null" } | null,
-      "client_participant": { "user_id": "string | null" } | null
-    }
-  ]
-  ```
-- **Types**: `bookings/types.ts:5-18`
+- **Source**: `bookings/bookingsApi.ts`
+- **Auth**: Bearer JWT (admin)
+- **Query params**: repeatable `booking_uids`, `current_statuses`, `current_organizer_user_ids`, `current_client_user_ids`; paging `limit` (frontend always sends 50; backend default 50, max 500) and `offset`
+- **Response 200**: `BookingListItem[]` (bare array, no total -- paging UI uses "full page => maybe more")
 
-### GET /bookings/{uid}
+### GET /bookings/{booking_uid}
 
-- **Source**: `bookingsApi.ts:33-39`
-- **Auth**: Bearer JWT
-- **Path param**: `uid` (booking UID, URL-encoded)
-- **Response** (200): `BookingDetails`
-  ```json
-  {
-    "id": "number",
-    "booking_uid": "string",
-    "start_time": "ISO datetime | null",
-    "end_time": "ISO datetime | null",
-    "current_status": "string | null",
-    "created_at": "ISO datetime",
-    "current_organizer_participant": { "user_id": "string | null" } | null,
-    "current_client_participant": { "user_id": "string | null" } | null,
-    "organizer_history": [{ "id": "number", "organizer_participant": {...}, "effective_from": "ISO datetime" }],
-    "meeting_links": [{ "id": "number", "participant": {...}, "meeting_url": "string", "created_at": "ISO datetime" }],
-    "email_notifications": [{ "id": "number", "participant": {...} | null, "trigger_event": "string | null", "sent_at": "ISO datetime | null", "last_status": "string | null", "status_history": [...] }],
-    "telegram_notifications": [{ "id": "number", "participant": {...} | null, "trigger_event": "string | null", "source_event_id": "string", "sent_at": "ISO datetime", "created_at": "ISO datetime" }],
-    "chat_events": [{ "id": "number", "chat_event_type": "string", "participant": {...} | null, "is_read": "boolean | null", "text_preview": "string | null", "occurred_at": "ISO datetime", "updated_at": "ISO datetime" }],
-    "video_events": [{ "id": "number", "raw_event_id": "string", "video_event_type": "string", "participant_role": "string | null", "participant": {...} | null, "event_time": "ISO datetime | null", "payload": "object" }]
-  }
-  ```
-- **Types**: `bookings/types.ts:30-103`
-- **Note**: On 404, the code retries the same request (bug -- `bookingsApi.ts:34-38`)
+- **Source**: `bookings/bookingsApi.ts` (`booking_uid` URL-encoded)
+- **Auth**: Bearer JWT (admin)
+- **Response 200**: `BookingDetails` (incl. `lifecycle_events`, `notifications`, `chat_events`, `video_events`, participants)
+- **Errors**: 404 when unknown (no client-side retry)
 
 ### GET /bookings/future-email-bounced
 
-- **Source**: `bookingsApi.ts:42-44`
-- **Auth**: Bearer JWT
-- **Response** (200): `FutureEmailBouncedBooking[]`
-  ```json
-  [
-    {
-      "id": "number",
-      "booking_uid": "string",
-      "start_date": "string",
-      "end_time": "ISO datetime | null",
-      "current_status": "string | null",
-      "organizer_participant": {...} | null,
-      "client_participant": {...} | null,
-      "email_bounce_statuses": ["string"]
-    }
-  ]
-  ```
-- **Types**: `bookings/types.ts:20-28`
+- **Source**: `bookings/bookingsApi.ts` (DashboardPage)
+- **Auth**: Bearer JWT (admin)
+- **Response 200**: `FutureEmailBouncedBooking[]` (backend default limit 50)
 
----
+### POST /bookings/{booking_uid}/reassign-client
 
-## Calls to event-users (`VITE_USERS_API_BASE_URL`)
+- **Source**: `participants/emailChangeApi.ts` (`booking_uid` URL-encoded)
+- **Auth**: Bearer JWT (admin)
+- **Request body**: `{ "new_client_email": string }`
+- **Response 202**: `{ "status": "accepted" }` -- applied asynchronously via RabbitMQ (`booking.client_reassigned`)
+- **Errors**: 404 `Booking with uid=... not found`; 404 `Client with this email not found` (translated)
 
-All requests go through `usersApiRequest()` in `participantsApi.ts:42-44`, which delegates to the shared `apiRequest()` with a different `baseUrl`.  
-Auth: Same Bearer JWT from localStorage (despite docs mentioning a static token, the code uses the user's JWT).
+## Users (event-admin proxy to event-users)
 
 ### GET /api/users
 
-- **Source**: `participantsApi.ts:46-54`
-- **Auth**: Bearer JWT
-- **Query params** (all optional):
-  - `email` (string) -- filter by email
-  - `role` (string) -- filter by role
-  - `limit` (number)
-  - `offset` (number)
-- **Response** (200): `ListUsersResponse`
-  ```json
-  {
-    "items": [
-      {
-        "id": "UUID string",
-        "email": "string",
-        "name": "string | null",
-        "role": "string",
-        "time_zone": "string | null",
-        "contacts": [
-          {
-            "id": "string",
-            "user_id": "string",
-            "channel": "string",
-            "contact_id": "string",
-            "created_at": "ISO datetime",
-            "updated_at": "ISO datetime"
-          }
-        ],
-        "created_at": "ISO datetime",
-        "updated_at": "ISO datetime"
-      }
-    ],
-    "total": "number",
-    "limit": "number",
-    "offset": "number"
-  }
-  ```
-- **Types**: `participantsApi.ts:5-36`
+- **Source**: `participants/participantsApi.ts` (`getUsers`, ParticipantsPage + ParticipantPicker)
+- **Auth**: Bearer JWT (admin)
+- **Query params**: `email` (substring filter), `role`, `limit` (frontend sends 50), `offset`
+- **Response 200**: `{ "items": UserItem[], "total": number, "limit": number, "offset": number }`
 
-### GET /api/users/{id}  (BUG -- should be /api/users/id/{id})
+### POST /api/users/by-ids
 
-- **Source**: `participantsApi.ts:56-58`
-- **Auth**: Bearer JWT
-- **Path param**: `id` (user UUID, URL-encoded)
-- **Intended response** (200): `UserItem` (same shape as items above)
-- **Actual behavior**: Returns 404 because the backend route is `/api/users/id/{user_id}`. The error is swallowed in `UserInfo.tsx:21-23`, resulting in truncated UUID display.
+- **Source**: `shared/userBatchLoader.ts` (batched lookups for `UserInfo`)
+- **Auth**: Bearer JWT (admin)
+- **Request body**: `{ "ids": string[] }` (UUIDs, max 200)
+- **Response 200**: `{ "items": UserItem[] }` -- ids missing from `items` are negative-cached client-side
 
----
+### GET /api/users/id/{user_id}
 
-## Sequence Diagrams
+- **Auth**: Bearer JWT (admin)
+- **Response 200**: `UserItem`
+- Currently unused by the frontend (kept for completeness; batch endpoint is preferred)
 
-### Login Flow
+### POST /api/users/id/{user_id}/change-email
 
-```mermaid
-sequenceDiagram
-    participant User
-    participant Browser as LoginPage
-    participant EventAdmin as event-admin
+- **Source**: `participants/emailChangeApi.ts` (EmailChangeModal)
+- **Auth**: Bearer JWT (admin)
+- **Request body**: `{ "new_email": string }`
+- **Response 202**: accepted -- applied asynchronously via RabbitMQ (`user.email.change_requested`); the frontend invalidates its user cache for this id
+- **Errors** (detail strings translated in `EmailChangeModal.tsx`, fragile prose coupling -- see AUDIT):
+  - 404 `User not found`
+  - 400 `Only client emails can be changed`
+  - 400 `New email is the same as current email`
+  - 409 `Email already in use by another client` -- when a `bookingUid` is in context, the modal offers the reassign flow instead
 
-    User->>Browser: Enter email, password, TOTP code
-    Browser->>EventAdmin: POST /auth/login {email, password, totp_code}
-    EventAdmin-->>Browser: 200 {access_token, token_type, role}
-    Browser->>Browser: localStorage.setItem("event_admin_jwt", access_token)
-    Browser->>Browser: localStorage.setItem("event_admin_role", role)
-    Browser->>Browser: AuthContext state update (isAuthenticated=true)
-    Browser->>Browser: navigateTo("/dashboard", {replace: true})
-    Browser->>User: Render DashboardPage
+### GET /api/users/id/{user_id}/email-changelog
+
+- **Source**: `participants/emailChangeApi.ts`
+- **Auth**: Bearer JWT (admin)
+- **Query params**: `limit` (default 20), `offset`
+- **Response 200**: `{ "items": [{ "id", "old_email", "new_email", "changed_by", "changed_at" }], "total": number }`
+
+## UserItem shape
+
+```json
+{
+  "id": "uuid",
+  "email": "string",
+  "name": "string | null",
+  "role": "organizer | client",
+  "time_zone": "string | null",
+  "contacts": [{ "id", "user_id", "channel", "contact_id", "created_at", "updated_at" }],
+  "created_at": "ISO datetime",
+  "updated_at": "ISO datetime"
+}
 ```
-
-**References**: `LoginPage.tsx`, `authApi.ts:4-9`, `AuthContext.tsx:30-35`, `App.tsx:36-38`
-
-### Booking Detail Load
-
-```mermaid
-sequenceDiagram
-    participant User
-    participant Browser as BookingDetailsPage
-    participant EventAdmin as event-admin
-    participant EventUsers as event-users
-
-    User->>Browser: Navigate to /bookings/{uid}
-    Browser->>Browser: parseRoute() -> {name: "booking-details", bookingUid}
-    Browser->>EventAdmin: GET /bookings/{uid} [Bearer JWT]
-    EventAdmin-->>Browser: 200 BookingDetails (with participant user_ids)
-
-    par For each participant user_id (organizer, client, notifications, etc.)
-        Browser->>EventUsers: GET /api/users/{user_id} [Bearer JWT]
-        Note right of EventUsers: BUG: should be /api/users/id/{user_id}
-        EventUsers-->>Browser: 404 (silently caught)
-        Browser->>Browser: Render truncated UUID as fallback
-    end
-
-    Browser->>User: Render complete booking details page
-```
-
-**References**: `BookingDetailsPage.tsx:222-248`, `bookingsApi.ts:33-39`, `UserInfo.tsx:13-30`, `participantsApi.ts:56-58`

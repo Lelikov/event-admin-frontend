@@ -53,7 +53,12 @@ function App() {
       {route.name === 'not-found' && (
         <div className="card">
           <h2>Страница не найдена</h2>
-          <p>Проверьте адрес или вернитесь в дашборд.</p>
+          <p>
+            Адрес <code>{pathname}</code> не существует.
+          </p>
+          <button type="button" onClick={() => navigateTo('/dashboard', { replace: true })}>
+            Вернуться в дашборд
+          </button>
         </div>
       )}
     </AdminLayout>

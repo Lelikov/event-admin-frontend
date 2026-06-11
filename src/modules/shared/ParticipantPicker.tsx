@@ -71,7 +71,9 @@ export function ParticipantPicker({
     if (e.key === 'Escape') {
       setIsOpen(false)
       setQuery('')
-    } else if (e.key === 'Backspace' && query === '' && selected.length > 0) {
+      return
+    }
+    if (e.key === 'Backspace' && query === '' && selected.length > 0) {
       onChange(selected.slice(0, -1))
     }
   }

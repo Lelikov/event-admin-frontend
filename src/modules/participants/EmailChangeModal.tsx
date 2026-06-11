@@ -18,11 +18,15 @@ type Props = {
   onSuccess: () => void
 }
 
+// Keyed on the exact detail strings returned by event-admin (routes.py).
+// Fragile cross-service coupling: replacing the prose with machine-readable
+// error codes is tracked as a cross-service follow-up in docs/AUDIT.md.
 const ERROR_MESSAGES: Record<string, string> = {
   'Email already in use by another client': 'Этот email уже используется другим клиентом',
   'User not found': 'Пользователь не найден',
   'Only client emails can be changed': 'Можно изменить только email клиента',
   'New email is the same as current email': 'Новый email совпадает с текущим',
+  'Client with this email not found': 'Клиент с таким email не найден',
 }
 
 function translateError(message: string): string {

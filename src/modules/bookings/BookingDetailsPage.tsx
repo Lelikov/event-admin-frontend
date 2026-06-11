@@ -38,18 +38,24 @@ function getLabels(devices: unknown): string[] {
     .filter((label) => label.length > 0)
 }
 
-function getAccessTitle(kind: 'audioInput' | 'videoInput' | 'audioOutput'): string {
-  return kind === 'audioInput' ? 'микрофону' : kind === 'videoInput' ? 'камере' : 'динамику'
+type DeviceKind = 'audioInput' | 'videoInput' | 'audioOutput'
+
+const ACCESS_TITLES: Record<DeviceKind, string> = {
+  audioInput: 'микрофону',
+  videoInput: 'камере',
+  audioOutput: 'динамику',
 }
 
-function getAccessIcon(kind: 'audioInput' | 'videoInput' | 'audioOutput'): string {
-  return kind === 'audioInput' ? '🎤' : kind === 'videoInput' ? '📷' : '🔊'
+const ACCESS_ICONS: Record<DeviceKind, string> = {
+  audioInput: '🎤',
+  videoInput: '📷',
+  audioOutput: '🔊',
 }
 
-function describeAccess(kind: 'audioInput' | 'videoInput' | 'audioOutput', devices: unknown): ReactNode {
+function describeAccess(kind: DeviceKind, devices: unknown): ReactNode {
   const labels = getLabels(devices)
-  const title = getAccessTitle(kind)
-  const icon = getAccessIcon(kind)
+  const title = ACCESS_TITLES[kind]
+  const icon = ACCESS_ICONS[kind]
   const toneClass = labels.length > 0 ? 'is-positive' : 'is-negative'
 
   if (labels.length === 0) {

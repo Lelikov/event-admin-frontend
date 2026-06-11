@@ -65,9 +65,9 @@ The bypass button renders only when `import.meta.env.DEV`, the flag, AND a non-e
 
 `UserInfo` no longer calls setState synchronously in an effect (cache is read during render via `useSyncExternalStore`); `useAuth`/`useTimeZone` hooks moved to their own files (`auth/useAuth.ts`, `settings/useTimeZone.ts`) so context files export only components. Lint is green.
 
-### 13. Error translation keyed on backend prose strings — FOLLOW-UP (event-admin) / mitigated
+### 13. Error translation keyed on backend prose strings — FIXED (2026-06-11, audit-v2 follow-up #6)
 
-The missing translation for `Client with this email not found` was added and the coupling is documented at the map definition. Proper fix requires event-admin to return machine-readable error codes (e.g. `detail: {code: "email_in_use"}`) — cross-service follow-up.
+event-admin now returns `detail = {code, message}` on every error path. `ApiError` carries the stable `code` (parsed in `shared/api.ts`, with tolerance for legacy plain-string details), and translations in `EmailChangeModal` / `LoginPage` are keyed on `code` with fallback to the backend message — no exact-prose string matching remains.
 
 ### 14. bookingUid not URL-encoded in reassignBookingClient — FIXED
 

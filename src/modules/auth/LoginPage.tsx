@@ -7,10 +7,18 @@ import { useAuth } from './useAuth.ts'
 const ENABLE_DEV_BYPASS_LOGIN = import.meta.env.VITE_ENABLE_DEV_BYPASS_LOGIN === 'true'
 const DEV_BYPASS_JWT: string = import.meta.env.VITE_DEV_BYPASS_JWT ?? ''
 
+// Keyed on stable error codes from event-admin (detail.code); the status
+// checks remain as a rollout fallback for responses without a code.
+const LOGIN_ERROR_MESSAGES: Record<string, string> = {
+  invalid_credentials: 'Неверный email, пароль или TOTP-код',
+  too_many_login_attempts: 'Слишком много неудачных попыток входа. Попробуйте позже.',
+}
+
 function translateLoginError(err: unknown): string {
   if (!(err instanceof ApiError)) return 'Не удалось выполнить вход'
-  if (err.status === 401) return 'Неверный email, пароль или TOTP-код'
-  if (err.status === 429) return 'Слишком много неудачных попыток входа. Попробуйте позже.'
+  if (err.code !== null && err.code in LOGIN_ERROR_MESSAGES) return LOGIN_ERROR_MESSAGES[err.code]
+  if (err.status === 401) return LOGIN_ERROR_MESSAGES.invalid_credentials
+  if (err.status === 429) return LOGIN_ERROR_MESSAGES.too_many_login_attempts
   return err.message
 }
 

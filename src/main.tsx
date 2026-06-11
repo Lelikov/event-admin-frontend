@@ -4,13 +4,16 @@ import './index.css'
 import App from './App.tsx'
 import { AuthProvider } from './modules/auth/AuthContext.tsx'
 import { TimeZoneProvider } from './modules/settings/TimeZoneContext.tsx'
+import { ErrorBoundary } from './modules/shared/ErrorBoundary.tsx'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <TimeZoneProvider>
-      <AuthProvider>
-        <App />
-      </AuthProvider>
-    </TimeZoneProvider>
+    <ErrorBoundary>
+      <TimeZoneProvider>
+        <AuthProvider>
+          <App />
+        </AuthProvider>
+      </TimeZoneProvider>
+    </ErrorBoundary>
   </StrictMode>,
 )

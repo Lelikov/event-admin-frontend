@@ -1,7 +1,8 @@
 import { type FormEvent, useEffect, useState } from 'react'
 import { ApiError } from '../shared/api.ts'
 import { formatDateTime } from '../shared/format.ts'
-import { useTimeZone } from '../settings/TimeZoneContext.tsx'
+import { invalidateUser } from '../shared/userBatchLoader.ts'
+import { useTimeZone } from '../settings/useTimeZone.ts'
 import {
   getEmailChangelog,
   reassignBookingClient,
@@ -17,15 +18,20 @@ type Props = {
   onSuccess: () => void
 }
 
+// Keyed on the stable machine-readable error codes returned by event-admin
+// (detail.code, see event-admin docs/API_CONTRACTS.md § Common Error Responses).
+// Unknown codes fall back to the backend-provided human message.
 const ERROR_MESSAGES: Record<string, string> = {
-  'Email already in use by another client': 'Этот email уже используется другим клиентом',
-  'User not found': 'Пользователь не найден',
-  'Only client emails can be changed': 'Можно изменить только email клиента',
-  'New email is the same as current email': 'Новый email совпадает с текущим',
+  email_already_in_use: 'Этот email уже используется другим клиентом',
+  user_not_found: 'Пользователь не найден',
+  not_a_client: 'Можно изменить только email клиента',
+  email_unchanged: 'Новый email совпадает с текущим',
+  client_not_found: 'Клиент с таким email не найден',
 }
 
-function translateError(message: string): string {
-  return ERROR_MESSAGES[message] ?? message
+function translateError(err: ApiError): string {
+  if (err.code !== null && err.code in ERROR_MESSAGES) return ERROR_MESSAGES[err.code]
+  return err.message
 }
 
 export function EmailChangeModal({ userId, currentEmail, bookingUid, onClose, onSuccess }: Props) {
@@ -75,6 +81,9 @@ export function EmailChangeModal({ userId, currentEmail, bookingUid, onClose, on
     setSubmitting(true)
     try {
       await requestEmailChange(userId, trimmed)
+      // The change is applied asynchronously via RabbitMQ; dropping the cache
+      // entry at least prevents the old email from being served indefinitely.
+      invalidateUser(userId)
       setSuccessMessage('Запрос на изменение email отправлен')
       setSuccess(true)
       setTimeout(() => {
@@ -87,7 +96,7 @@ export function EmailChangeModal({ userId, currentEmail, bookingUid, onClose, on
           setConfirmReassign(true)
           return
         }
-        setError(translateError(err.message))
+        setError(translateError(err))
       } else {
         setError('Не удалось отправить запрос')
       }
@@ -101,6 +110,7 @@ export function EmailChangeModal({ userId, currentEmail, bookingUid, onClose, on
     setError(null)
     try {
       await reassignBookingClient(bookingUid!, newEmail.trim().toLowerCase())
+      invalidateUser(userId)
       setSuccessMessage('Клиент встречи переназначен')
       setSuccess(true)
       setConfirmReassign(false)
@@ -111,7 +121,7 @@ export function EmailChangeModal({ userId, currentEmail, bookingUid, onClose, on
     } catch (err) {
       setConfirmReassign(false)
       if (err instanceof ApiError) {
-        setError(translateError(err.message))
+        setError(translateError(err))
       } else {
         setError('Не удалось переназначить клиента')
       }

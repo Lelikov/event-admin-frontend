@@ -14,7 +14,7 @@ export type EmailChangelogResponse = {
 }
 
 export async function reassignBookingClient(bookingUid: string, newClientEmail: string): Promise<void> {
-  await apiRequest(`/bookings/${bookingUid}/reassign-client`, {
+  await apiRequest(`/bookings/${encodeURIComponent(bookingUid)}/reassign-client`, {
     method: 'POST',
     body: { new_client_email: newClientEmail },
   })

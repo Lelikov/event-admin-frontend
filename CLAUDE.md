@@ -8,19 +8,19 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 npm run dev       # Start dev server (Vite)
 npm run build     # Type-check + production build
 npm run lint      # Run ESLint
+npm test          # Run Vitest unit tests (happy-dom)
 npm run preview   # Preview production build locally
 ```
 
-No test runner is configured.
+## Environment Variables
 
-## Environment Variables'yl
+See `.env.example`. All backend traffic goes to event-admin only.
 
 | Variable | Description |
 |---|---|
-| `VITE_API_BASE_URL` | event-admin backend base URL (e.g. `http://localhost:8000`) |
-| `VITE_USERS_API_BASE_URL` | event-users backend base URL (e.g. `http://localhost:8001`) |
-| `VITE_ENABLE_DEV_BYPASS_LOGIN` | `true` to show a dev login button that bypasses login |
-| `VITE_DEV_BYPASS_JWT` | JWT used when dev bypass login is triggered |
+| `VITE_API_BASE_URL` | event-admin backend base URL (e.g. `http://localhost:8000`); warned if empty in prod builds |
+| `VITE_ENABLE_DEV_BYPASS_LOGIN` | `true` to show a dev login button (dev builds only) |
+| `VITE_DEV_BYPASS_JWT` | JWT used when dev bypass login is triggered; button hidden when unset |
 
 ## Architecture
 
@@ -35,27 +35,28 @@ There is no router library. Routing is implemented manually in `src/modules/shar
 
 | Module | Purpose |
 |---|---|
-| `auth/` | Login page, `AuthContext`, JWT storage (`localStorage` key: `event_admin_jwt`), API calls |
-| `bookings/` | Dashboard, bookings list, booking details pages + their API calls and types |
-| `settings/` | `TimeZoneContext` — persists chosen timezone to `localStorage` (`event_admin_time_zone`) |
+| `auth/` | Login page, `AuthProvider` + `useAuth`, JWT storage (`sessionStorage` key: `event_admin_jwt`), `jwt.ts` payload decoding, API calls |
+| `bookings/` | Dashboard, paged bookings list, booking details pages + their API calls and types |
+| `settings/` | `TimeZoneProvider` + `useTimeZone` — persists validated timezone to `localStorage` (`event_admin_time_zone`) |
 | `app/` | `AdminLayout` — sidebar + page shell wrapping authenticated pages |
-| `participants/` | Users list page + `participantsApi.ts` — calls event-users backend (`VITE_USERS_API_BASE_URL`) with static bearer token (`VITE_USERS_API_TOKEN`) |
-| `shared/` | `apiRequest` fetch wrapper, `formatDateTime` (ru-RU locale), `routing` |
+| `participants/` | Users list page, email-change/reassign modal; all user calls go through event-admin's `/api/users` proxy |
+| `shared/` | `apiRequest` fetch wrapper (401 interceptor), `userBatchLoader` (batched `/api/users/by-ids` cache), `formatDateTime`, `routing`, `ErrorBoundary` |
 
 ### API layer
 
-Requests to **event-admin** go through `src/modules/shared/api.ts` → `apiRequest<T>()`. It automatically:
+ALL requests (including `/api/users/*`, which event-admin proxies to event-users with admin RBAC) go through `src/modules/shared/api.ts` → `apiRequest<T>()`. It automatically:
 - Prepends `VITE_API_BASE_URL`
-- Attaches `Authorization: Bearer <token>` from localStorage when `auth: true` (default)
+- Attaches `Authorization: Bearer <token>` from sessionStorage when `auth: true` (default)
 - Throws `ApiError` (with `.status` and `.details`) for non-2xx responses
+- On 401 for a request that carried a token: clears the session and redirects to `/login` (requests with `auth: false`, i.e. login itself, never redirect)
 
-Requests to **event-users** go through the `usersApiRequest` function in `participants/participantsApi.ts`. It uses `VITE_USERS_API_BASE_URL` and `VITE_USERS_API_TOKEN` (static bearer token). Endpoints are prefixed with `/api/users`.
+User name/email lookups use `shared/userBatchLoader.ts`: per-microtask batching into `POST /api/users/by-ids`, session-long cache with negative caching, `invalidateUser`/`clearUserCache` + a subscription consumed by `UserInfo`.
 
 ### Auth flow
 
-`AuthProvider` (wraps entire app) holds JWT and role in state and localStorage. `App.tsx` redirects unauthenticated users to `/login` and authenticated users away from `/login`. Login sends `email + password + totp_code` to `POST /auth/login` on event-admin. The response includes `access_token` and `role` (`"admin"` or `"user"`). The same JWT is used for both event-admin and event-users requests.
+`AuthProvider` (wraps entire app) holds the JWT in state and sessionStorage and drops expired tokens at startup (`auth/jwt.ts` decodes the `exp` claim). `App.tsx` redirects unauthenticated users to `/login` and authenticated users away from `/login`. Login sends `email + password + totp_code` to `POST /auth/login` on event-admin (tokens live 60 minutes; 401 and 429 are translated to Russian messages).
 
-**Role-based access**: `admin` can access all pages including `/participants`. `user` is redirected away from `/participants` to `/dashboard`. The `/participants` nav item is hidden for non-admin users.
+**Role-based access**: none client-side. event-admin requires `role="admin"` on every data endpoint, so only admin tokens can use the app; the role is a JWT claim and is not stored separately.
 
 ### Date formatting
 

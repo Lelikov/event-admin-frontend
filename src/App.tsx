@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { AdminLayout } from './modules/app/AdminLayout.tsx'
 import { LoginPage } from './modules/auth/LoginPage.tsx'
-import { useAuth } from './modules/auth/AuthContext.tsx'
+import { useAuth } from './modules/auth/useAuth.ts'
 import { BookingDetailsPage } from './modules/bookings/BookingDetailsPage.tsx'
 import { BookingsPage } from './modules/bookings/BookingsPage.tsx'
 import { DashboardPage } from './modules/bookings/DashboardPage.tsx'
@@ -25,8 +25,8 @@ function App() {
 
   const route = useMemo(() => parseRoute(pathname), [pathname])
 
-  const { role } = useAuth()
-
+  // Note: there is no client-side role gate. event-admin requires the admin
+  // role on every data endpoint, so non-admin tokens cannot use the app at all.
   useEffect(() => {
     if (!isAuthenticated && route.name !== 'login') {
       navigateTo('/login', { replace: true })
@@ -35,13 +35,8 @@ function App() {
 
     if (isAuthenticated && route.name === 'login') {
       navigateTo('/dashboard', { replace: true })
-      return
     }
-
-    if (isAuthenticated && route.name === 'participants' && role !== 'admin') {
-      navigateTo('/dashboard', { replace: true })
-    }
-  }, [isAuthenticated, route.name, role])
+  }, [isAuthenticated, route.name])
 
   if (route.name === 'login') {
     return <LoginPage />
@@ -58,7 +53,12 @@ function App() {
       {route.name === 'not-found' && (
         <div className="card">
           <h2>Страница не найдена</h2>
-          <p>Проверьте адрес или вернитесь в дашборд.</p>
+          <p>
+            Адрес <code>{pathname}</code> не существует.
+          </p>
+          <button type="button" onClick={() => navigateTo('/dashboard', { replace: true })}>
+            Вернуться в дашборд
+          </button>
         </div>
       )}
     </AdminLayout>

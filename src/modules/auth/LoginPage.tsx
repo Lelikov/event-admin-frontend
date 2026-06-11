@@ -2,10 +2,25 @@ import { type FormEvent, useMemo, useState } from 'react'
 import { ApiError } from '../shared/api.ts'
 import { navigateTo } from '../shared/routing.ts'
 import { login } from './authApi.ts'
-import { useAuth } from './AuthContext.tsx'
+import { useAuth } from './useAuth.ts'
 
 const ENABLE_DEV_BYPASS_LOGIN = import.meta.env.VITE_ENABLE_DEV_BYPASS_LOGIN === 'true'
-const DEV_BYPASS_JWT = import.meta.env.VITE_DEV_BYPASS_JWT ?? 'dev-bypass-jwt-token'
+const DEV_BYPASS_JWT: string = import.meta.env.VITE_DEV_BYPASS_JWT ?? ''
+
+// Keyed on stable error codes from event-admin (detail.code); the status
+// checks remain as a rollout fallback for responses without a code.
+const LOGIN_ERROR_MESSAGES: Record<string, string> = {
+  invalid_credentials: 'Неверный email, пароль или TOTP-код',
+  too_many_login_attempts: 'Слишком много неудачных попыток входа. Попробуйте позже.',
+}
+
+function translateLoginError(err: unknown): string {
+  if (!(err instanceof ApiError)) return 'Не удалось выполнить вход'
+  if (err.code !== null && err.code in LOGIN_ERROR_MESSAGES) return LOGIN_ERROR_MESSAGES[err.code]
+  if (err.status === 401) return LOGIN_ERROR_MESSAGES.invalid_credentials
+  if (err.status === 429) return LOGIN_ERROR_MESSAGES.too_many_login_attempts
+  return err.message
+}
 
 export function LoginPage() {
   const { loginWithToken } = useAuth()
@@ -32,10 +47,10 @@ export function LoginPage() {
         password,
         totp_code: totpCode.trim(),
       })
-      loginWithToken(response.access_token, response.role)
+      loginWithToken(response.access_token)
       navigateTo('/dashboard', { replace: true })
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Не удалось выполнить вход')
+      setError(translateLoginError(err))
     } finally {
       setLoading(false)
     }
@@ -90,13 +105,12 @@ export function LoginPage() {
               {loading ? 'Входим…' : 'Войти'}
             </button>
 
-            {import.meta.env.DEV && ENABLE_DEV_BYPASS_LOGIN && (
+            {import.meta.env.DEV && ENABLE_DEV_BYPASS_LOGIN && DEV_BYPASS_JWT !== '' && (
               <button
                 type="button"
                 className="secondary"
                 onClick={() => {
-                  const payload = JSON.parse(atob(DEV_BYPASS_JWT.split('.')[1]))
-                  loginWithToken(DEV_BYPASS_JWT, payload.role || 'user')
+                  loginWithToken(DEV_BYPASS_JWT)
                   navigateTo('/dashboard', { replace: true })
                 }}
                 disabled={loading}
@@ -107,7 +121,7 @@ export function LoginPage() {
           </div>
         </form>
 
-        {import.meta.env.DEV && ENABLE_DEV_BYPASS_LOGIN && (
+        {import.meta.env.DEV && ENABLE_DEV_BYPASS_LOGIN && DEV_BYPASS_JWT !== '' && (
           <p className="hint">Dev bypass включён через VITE_ENABLE_DEV_BYPASS_LOGIN=true</p>
         )}
         {error && <p className="error-text">{error}</p>}

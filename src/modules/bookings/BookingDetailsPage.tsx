@@ -2,7 +2,7 @@ import { useEffect, useState, type ReactNode } from 'react'
 import { ApiError } from '../shared/api.ts'
 import { formatDateTime } from '../shared/format.ts'
 import { navigateTo } from '../shared/routing.ts'
-import { useTimeZone } from '../settings/TimeZoneContext.tsx'
+import { useTimeZone } from '../settings/useTimeZone.ts'
 import { getBookingDetails } from './bookingsApi.ts'
 import {
   getBookingStatusLabel,
@@ -38,18 +38,24 @@ function getLabels(devices: unknown): string[] {
     .filter((label) => label.length > 0)
 }
 
-function getAccessTitle(kind: 'audioInput' | 'videoInput' | 'audioOutput'): string {
-  return kind === 'audioInput' ? 'микрофону' : kind === 'videoInput' ? 'камере' : 'динамику'
+type DeviceKind = 'audioInput' | 'videoInput' | 'audioOutput'
+
+const ACCESS_TITLES: Record<DeviceKind, string> = {
+  audioInput: 'микрофону',
+  videoInput: 'камере',
+  audioOutput: 'динамику',
 }
 
-function getAccessIcon(kind: 'audioInput' | 'videoInput' | 'audioOutput'): string {
-  return kind === 'audioInput' ? '🎤' : kind === 'videoInput' ? '📷' : '🔊'
+const ACCESS_ICONS: Record<DeviceKind, string> = {
+  audioInput: '🎤',
+  videoInput: '📷',
+  audioOutput: '🔊',
 }
 
-function describeAccess(kind: 'audioInput' | 'videoInput' | 'audioOutput', devices: unknown): ReactNode {
+function describeAccess(kind: DeviceKind, devices: unknown): ReactNode {
   const labels = getLabels(devices)
-  const title = getAccessTitle(kind)
-  const icon = getAccessIcon(kind)
+  const title = ACCESS_TITLES[kind]
+  const icon = ACCESS_ICONS[kind]
   const toneClass = labels.length > 0 ? 'is-positive' : 'is-negative'
 
   if (labels.length === 0) {
@@ -273,19 +279,8 @@ export function BookingDetailsPage({ bookingUid }: BookingDetailsPageProps) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [editingClientEmail, setEditingClientEmail] = useState<{ id: string; email: string } | null>(null)
-
-  async function loadBookingDetails() {
-    setLoading(true)
-    setError(null)
-    try {
-      const response = await getBookingDetails(bookingUid)
-      setItem(response)
-    } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Не удалось загрузить детали бронирования')
-    } finally {
-      setLoading(false)
-    }
-  }
+  // Bumping the counter re-runs the load effect (used after email change/reassign).
+  const [reloadCounter, setReloadCounter] = useState(0)
 
   useEffect(() => {
     let cancelled = false
@@ -313,7 +308,7 @@ export function BookingDetailsPage({ bookingUid }: BookingDetailsPageProps) {
     return () => {
       cancelled = true
     }
-  }, [bookingUid])
+  }, [bookingUid, reloadCounter])
 
   return (
     <>
@@ -610,7 +605,7 @@ export function BookingDetailsPage({ bookingUid }: BookingDetailsPageProps) {
         onClose={() => setEditingClientEmail(null)}
         onSuccess={() => {
           setEditingClientEmail(null)
-          void loadBookingDetails()
+          setReloadCounter((counter) => counter + 1)
         }}
       />
     )}

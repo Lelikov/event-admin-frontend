@@ -32,6 +32,11 @@ const NAV_ITEMS: NavItem[] = [
     path: '/participants',
     match: (pathname) => pathname === '/participants',
   },
+  {
+    label: 'Чёрный список',
+    path: '/blacklist',
+    match: (pathname) => pathname === '/blacklist',
+  },
 ]
 
 type TimeZonePickerProps = {

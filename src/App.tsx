@@ -6,6 +6,7 @@ import { BookingDetailsPage } from './modules/bookings/BookingDetailsPage.tsx'
 import { BookingsPage } from './modules/bookings/BookingsPage.tsx'
 import { DashboardPage } from './modules/bookings/DashboardPage.tsx'
 import { ParticipantsPage } from './modules/participants/ParticipantsPage.tsx'
+import { BlacklistPage } from './modules/blacklist/BlacklistPage.tsx'
 import { navigateTo, parseRoute } from './modules/shared/routing.ts'
 
 function App() {
@@ -50,6 +51,7 @@ function App() {
         <BookingDetailsPage bookingUid={route.bookingUid} />
       )}
       {route.name === 'participants' && <ParticipantsPage />}
+      {route.name === 'blacklist' && <BlacklistPage />}
       {route.name === 'not-found' && (
         <div className="card">
           <h2>Страница не найдена</h2>

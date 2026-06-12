@@ -193,6 +193,16 @@ button.secondary:hover {
 
 .inline-actions { display: flex; gap: 8px; flex-wrap: wrap; }
 
+.checkbox-field {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  align-self: end;
+  padding-bottom: 8px;
+}
+
+.checkbox-field input[type='checkbox'] { width: 16px; height: 16px; accent-color: var(--primary); }
+
 /* ─────────────────────────────────────────────
    LOGIN
 ───────────────────────────────────────────── */

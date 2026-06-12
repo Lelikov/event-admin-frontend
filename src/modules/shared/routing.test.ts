@@ -8,6 +8,7 @@ describe('parseRoute', () => {
     expect(parseRoute('/dashboard')).toEqual({ name: 'dashboard' })
     expect(parseRoute('/bookings')).toEqual({ name: 'bookings' })
     expect(parseRoute('/participants')).toEqual({ name: 'participants' })
+    expect(parseRoute('/blacklist')).toEqual({ name: 'blacklist' })
   })
 
   it('parses booking details and decodes the uid', () => {

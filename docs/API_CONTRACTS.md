@@ -54,6 +54,60 @@ The `/api/users/*` endpoints below are event-admin's **authenticated proxy** to 
 - **Response 202**: `{ "status": "accepted" }` -- applied asynchronously via RabbitMQ (`booking.client_reassigned`)
 - **Errors**: 404 `Booking with uid=... not found`; 404 `Client with this email not found` (translated)
 
+## Blacklist
+
+All blacklist endpoints live in `blacklist/blacklistApi.ts` (BlacklistPage + BlacklistEntryModal).
+Error codes are translated in `translateBlacklistError` (machine-readable `detail.code`):
+`blacklist_entry_not_found`, `invalid_active_window`, `invalid_value`, `empty_update`,
+`field_not_nullable`; unknown codes fall back to the backend message.
+
+### GET /api/blacklist
+
+- **Auth**: Bearer JWT (admin)
+- **Query params**: `field`, `value` (substring filter), `only_effective` (sent only when true), `limit` (frontend sends 50), `offset`
+- **Response 200**: `{ "items": BlacklistEntry[], "total": number, "limit": number, "offset": number }`
+
+### POST /api/blacklist
+
+- **Auth**: Bearer JWT (admin)
+- **Request body**: `{ "field": string, "value": string, "is_active": bool, "active_from": ISO|null, "active_until": ISO|null, "comment": string|null }`
+- **Response 201**: `BlacklistEntry` -- `client_email` values are lowercased server-side
+- **Errors**: 400 `invalid_value`, 400 `invalid_active_window`
+
+### PATCH /api/blacklist/{id}
+
+- **Auth**: Bearer JWT (admin)
+- **Request body**: partial -- only the keys present are updated (`exclude_unset`); `active_from`/`active_until`/`comment` accept explicit `null` to clear. The modal sends only changed fields; the table's «Активна» toggle sends `{ "is_active": bool }`.
+- **Response 200**: updated `BlacklistEntry`
+- **Errors**: 404 `blacklist_entry_not_found`, 400 `empty_update`, 400 `field_not_nullable`, 400 `invalid_value`, 400 `invalid_active_window`
+
+### DELETE /api/blacklist/{id}
+
+- **Auth**: Bearer JWT (admin)
+- **Response 204**: no body
+- **Errors**: 404 `blacklist_entry_not_found`
+
+### BlacklistEntry shape
+
+```json
+{
+  "id": "uuid",
+  "field": "client_email",
+  "value": "string (lowercased for client_email)",
+  "is_active": true,
+  "active_from": "ISO datetime | null",
+  "active_until": "ISO datetime | null",
+  "comment": "string | null",
+  "created_by": "admin email (JWT sub)",
+  "created_at": "ISO datetime",
+  "updated_at": "ISO datetime"
+}
+```
+
+The «Действует сейчас» indicator is computed client-side in `blacklist/effectiveness.ts`
+(`is_active` AND now within `[active_from, active_until]`, NULL bound = unbounded),
+mirroring the backend's `only_effective` SQL rule.
+
 ## Users (event-admin proxy to event-users)
 
 ### GET /api/users

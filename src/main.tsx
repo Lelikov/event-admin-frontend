@@ -5,6 +5,9 @@ import App from './App.tsx'
 import { AuthProvider } from './modules/auth/AuthContext.tsx'
 import { TimeZoneProvider } from './modules/settings/TimeZoneContext.tsx'
 import { ErrorBoundary } from './modules/shared/ErrorBoundary.tsx'
+import { initSentry } from './observability/sentry'
+
+initSentry()
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

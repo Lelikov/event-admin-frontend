@@ -58,15 +58,33 @@ There is **no client-side role branching**. event-admin attaches `require_admin`
 
 `shared/userBatchLoader.ts` batches all `UserInfo` lookups within a microtask into a single `POST /api/users/by-ids` call and caches results for the SPA session, including **negative caching** of unknown ids. `invalidateUser(id)` / `clearUserCache()` drop entries (used after email change/reassign and on logout); `UserInfo` subscribes via `useSyncExternalStore` and re-fetches automatically after invalidation.
 
+## Observability
+
+**Sentry** error + performance monitoring (`@sentry/react`, no session replay) is built in and gated:
+Sentry initializes only when `VITE_SENTRY_ENABLED=true` AND a non-empty `VITE_SENTRY_DSN` are present
+(off by default — no Sentry calls in local dev). Config is delivered at runtime via `window._env_`
+(the nginx entrypoint `docker-entrypoint.d/40-env-config.sh` regenerates `env-config.js` from
+`^VITE_*` env vars at container start). In Kubernetes, the vars arrive via Vault → ESO → `envFrom`.
+Source maps are uploaded to Sentry in CI via `@sentry/vite-plugin` using repo secrets
+`SENTRY_ORG` / `SENTRY_PROJECT` / `SENTRY_AUTH_TOKEN` (build-time only, never in Vault). The
+`ErrorBoundary.componentDidCatch` reports caught render errors to Sentry. Best-effort trace
+correlation with Tempo: the same-origin nginx proxy means `window.location.origin` already covers
+propagation targets; no `VITE_SENTRY_BACKEND_URL` needed.
+
 ## Environment Variables
 
-Defined at build time via Vite (`import.meta.env.VITE_*`). See `.env.example`.
+Defined at build time via Vite (`import.meta.env.VITE_*`) or at runtime via `window._env_` (injected
+by `docker-entrypoint.d/40-env-config.sh`; the runtime value wins). See `.env.example`.
 
 | Variable | Required | Description |
 |----------|----------|-------------|
 | `VITE_API_BASE_URL` | Yes (warned if empty in prod builds) | event-admin backend base URL. The ONLY backend URL the app uses |
 | `VITE_ENABLE_DEV_BYPASS_LOGIN` | No | `"true"` to show dev login button (dev builds only) |
 | `VITE_DEV_BYPASS_JWT` | No | JWT used when dev bypass is triggered; button hidden when unset |
+| `VITE_SENTRY_ENABLED` | No | `"true"` to activate Sentry; off by default |
+| `VITE_SENTRY_DSN` | No (required when enabled) | Sentry project DSN (public-safe) |
+| `VITE_SENTRY_ENVIRONMENT` | No | Environment tag (`production`, `staging`, …) |
+| `VITE_SENTRY_TRACES_SAMPLE_RATE` | No | 0–1 performance sample rate (prod default: `0.1`) |
 
 The Vite dev server proxies `/api`, `/auth`, `/bookings`, `/health` to `VITE_API_BASE_URL` (event-admin) for relative-URL setups.
 

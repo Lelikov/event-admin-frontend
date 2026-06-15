@@ -674,13 +674,7 @@ export function BookingDetailsPage({ bookingUid }: BookingDetailsPageProps) {
             </button>
           </div>
           <div className="modal-body">
-            <p>
-              Отправить клиенту{' '}
-              <strong>
-                <UserInfo userId={item.current_client_participant?.user_id} />
-              </strong>{' '}
-              письмо-напоминание о встрече?
-            </p>
+            <p>Отправить клиенту письмо-напоминание о встрече?</p>
             <p className="muted" style={{ fontSize: '0.85rem', marginTop: '0.5rem' }}>
               Письмо уйдёт на актуальный email клиента.
             </p>

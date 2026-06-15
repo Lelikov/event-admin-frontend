@@ -6,6 +6,7 @@ import {
   previewTelegram,
   putBinding,
   type Binding,
+  type RecipientRole,
   type UnisenderTemplate,
 } from './notificationsApi.ts'
 
@@ -31,6 +32,11 @@ const TRIGGER_LABELS: Record<TriggerEvent, string> = {
   BOOKING_REJECTED_BLACKLISTED: 'Отклонено (ЧС)',
 }
 
+const ROLES: { value: RecipientRole; label: string }[] = [
+  { value: 'client', label: 'Клиент' },
+  { value: 'organizer', label: 'Волонтёр' },
+]
+
 type RowState = {
   emailEnabled: boolean
   emailTemplateId: string
@@ -46,10 +52,15 @@ type RowState = {
 
 function bindingsToRowState(
   trigger: string,
+  role: RecipientRole,
   bindings: Binding[],
 ): RowState {
-  const email = bindings.find((b) => b.trigger_event === trigger && b.channel === 'email')
-  const telegram = bindings.find((b) => b.trigger_event === trigger && b.channel === 'telegram')
+  const email = bindings.find(
+    (b) => b.trigger_event === trigger && b.recipient_role === role && b.channel === 'email',
+  )
+  const telegram = bindings.find(
+    (b) => b.trigger_event === trigger && b.recipient_role === role && b.channel === 'telegram',
+  )
   return {
     emailEnabled: email?.enabled ?? false,
     emailTemplateId: email?.unisender_template_id ?? '',
@@ -67,21 +78,28 @@ function bindingsToRowState(
 export function NotificationsPage() {
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState<string | null>(null)
+  const [role, setRole] = useState<RecipientRole>('client')
+  const [allBindings, setAllBindings] = useState<Binding[]>([])
   const [rows, setRows] = useState<Record<string, RowState>>({})
   const [templates, setTemplates] = useState<UnisenderTemplate[]>([])
   const [templatesLoading, setTemplatesLoading] = useState(false)
   const [templatesError, setTemplatesError] = useState<string | null>(null)
+
+  function rebuildRows(bindings: Binding[], forRole: RecipientRole) {
+    const initial: Record<string, RowState> = {}
+    for (const trigger of TRIGGER_EVENTS) {
+      initial[trigger] = bindingsToRowState(trigger, forRole, bindings)
+    }
+    setRows(initial)
+  }
 
   async function loadData() {
     setLoading(true)
     setLoadError(null)
     try {
       const [configData, templatesData] = await Promise.all([getConfig(), getUnisenderTemplates()])
-      const initial: Record<string, RowState> = {}
-      for (const trigger of TRIGGER_EVENTS) {
-        initial[trigger] = bindingsToRowState(trigger, configData.bindings)
-      }
-      setRows(initial)
+      setAllBindings(configData.bindings)
+      rebuildRows(configData.bindings, role)
       setTemplates(templatesData.templates)
     } catch (err) {
       setLoadError(err instanceof ApiError ? err.message : 'Не удалось загрузить настройки уведомлений')
@@ -93,6 +111,13 @@ export function NotificationsPage() {
   useEffect(() => {
     void loadData()
   }, [])
+
+  useEffect(() => {
+    if (allBindings.length > 0) {
+      rebuildRows(allBindings, role)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [role])
 
   function updateRow(trigger: string, patch: Partial<RowState>) {
     setRows((prev) => ({ ...prev, [trigger]: { ...prev[trigger], ...patch } }))
@@ -116,14 +141,16 @@ export function NotificationsPage() {
     if (!row) return
     updateRow(trigger, { saving: true, saveError: null, saveOk: false })
     try {
-      await putBinding(trigger, 'email', {
+      await putBinding(trigger, role, 'email', {
         enabled: row.emailEnabled,
         unisender_template_id: row.emailTemplateId || null,
       })
-      await putBinding(trigger, 'telegram', {
+      await putBinding(trigger, role, 'telegram', {
         enabled: row.telegramEnabled,
         telegram_body: row.telegramBody || null,
       })
+      const fresh = await getConfig()
+      setAllBindings(fresh.bindings)
       updateRow(trigger, { saving: false, saveOk: true })
       setTimeout(() => updateRow(trigger, { saveOk: false }), 2000)
     } catch (err) {
@@ -164,6 +191,21 @@ export function NotificationsPage() {
 
         {!loading && !loadError && (
           <>
+            <div className="tabs" role="tablist" style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
+              {ROLES.map((r) => (
+                <button
+                  key={r.value}
+                  type="button"
+                  role="tab"
+                  aria-selected={role === r.value}
+                  className={role === r.value ? 'small' : 'secondary small'}
+                  onClick={() => setRole(r.value)}
+                >
+                  {r.label}
+                </button>
+              ))}
+            </div>
+
             <div style={{ marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '12px' }}>
               <span className="muted" style={{ fontSize: '12px' }}>
                 Шаблоны UniSender

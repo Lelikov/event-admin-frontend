@@ -9,6 +9,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createRoot } from 'react-dom/client'
 import { act } from 'react'
 import { NotificationsPage } from './NotificationsPage.tsx'
+import type { Binding } from './notificationsApi.ts'
 
 // ──────────────────────────────────────────────────────────────────────────────
 // Module mock — must be at the top level so vitest can hoist it.
@@ -29,25 +30,46 @@ import {
 } from './notificationsApi.ts'
 
 // ──────────────────────────────────────────────────────────────────────────────
-// Fixtures
+// Helpers
 // ──────────────────────────────────────────────────────────────────────────────
 const NOW = '2026-06-15T00:00:00Z'
 
-const FAKE_BINDINGS = [
-  { trigger_event: 'BOOKING_CREATED', channel: 'email', enabled: true, unisender_template_id: 'tpl-1', telegram_body: null, updated_at: NOW },
-  { trigger_event: 'BOOKING_CREATED', channel: 'telegram', enabled: true, unisender_template_id: null, telegram_body: 'Привет, {{ client_name }}!', updated_at: NOW },
-  { trigger_event: 'BOOKING_RESCHEDULED', channel: 'email', enabled: false, unisender_template_id: null, telegram_body: null, updated_at: NOW },
-  { trigger_event: 'BOOKING_RESCHEDULED', channel: 'telegram', enabled: false, unisender_template_id: null, telegram_body: '', updated_at: NOW },
-  { trigger_event: 'BOOKING_REASSIGNED', channel: 'email', enabled: false, unisender_template_id: null, telegram_body: null, updated_at: NOW },
-  { trigger_event: 'BOOKING_REASSIGNED', channel: 'telegram', enabled: false, unisender_template_id: null, telegram_body: '', updated_at: NOW },
-  { trigger_event: 'BOOKING_CANCELLED', channel: 'email', enabled: false, unisender_template_id: null, telegram_body: null, updated_at: NOW },
-  { trigger_event: 'BOOKING_CANCELLED', channel: 'telegram', enabled: false, unisender_template_id: null, telegram_body: '', updated_at: NOW },
-  { trigger_event: 'BOOKING_REMINDER', channel: 'email', enabled: false, unisender_template_id: null, telegram_body: null, updated_at: NOW },
-  { trigger_event: 'BOOKING_REMINDER', channel: 'telegram', enabled: false, unisender_template_id: null, telegram_body: '', updated_at: NOW },
-  { trigger_event: 'BOOKING_REJECTED', channel: 'email', enabled: false, unisender_template_id: null, telegram_body: null, updated_at: NOW },
-  { trigger_event: 'BOOKING_REJECTED', channel: 'telegram', enabled: false, unisender_template_id: null, telegram_body: '', updated_at: NOW },
-  { trigger_event: 'BOOKING_REJECTED_BLACKLISTED', channel: 'email', enabled: false, unisender_template_id: null, telegram_body: null, updated_at: NOW },
-  { trigger_event: 'BOOKING_REJECTED_BLACKLISTED', channel: 'telegram', enabled: false, unisender_template_id: null, telegram_body: '', updated_at: NOW },
+function mkBinding(
+  trigger: string,
+  recipient_role: 'client' | 'organizer',
+  channel: string,
+  extra: Partial<Binding> = {},
+): Binding {
+  return {
+    trigger_event: trigger,
+    recipient_role,
+    channel,
+    enabled: true,
+    unisender_template_id: null,
+    telegram_body: null,
+    updated_at: '2026-06-15T00:00:00',
+    ...extra,
+  }
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Fixtures
+// ──────────────────────────────────────────────────────────────────────────────
+const FAKE_BINDINGS: Binding[] = [
+  { trigger_event: 'BOOKING_CREATED', recipient_role: 'client', channel: 'email', enabled: true, unisender_template_id: 'tpl-1', telegram_body: null, updated_at: NOW },
+  { trigger_event: 'BOOKING_CREATED', recipient_role: 'client', channel: 'telegram', enabled: true, unisender_template_id: null, telegram_body: 'Привет, {{ client_name }}!', updated_at: NOW },
+  { trigger_event: 'BOOKING_RESCHEDULED', recipient_role: 'client', channel: 'email', enabled: false, unisender_template_id: null, telegram_body: null, updated_at: NOW },
+  { trigger_event: 'BOOKING_RESCHEDULED', recipient_role: 'client', channel: 'telegram', enabled: false, unisender_template_id: null, telegram_body: '', updated_at: NOW },
+  { trigger_event: 'BOOKING_REASSIGNED', recipient_role: 'client', channel: 'email', enabled: false, unisender_template_id: null, telegram_body: null, updated_at: NOW },
+  { trigger_event: 'BOOKING_REASSIGNED', recipient_role: 'client', channel: 'telegram', enabled: false, unisender_template_id: null, telegram_body: '', updated_at: NOW },
+  { trigger_event: 'BOOKING_CANCELLED', recipient_role: 'client', channel: 'email', enabled: false, unisender_template_id: null, telegram_body: null, updated_at: NOW },
+  { trigger_event: 'BOOKING_CANCELLED', recipient_role: 'client', channel: 'telegram', enabled: false, unisender_template_id: null, telegram_body: '', updated_at: NOW },
+  { trigger_event: 'BOOKING_REMINDER', recipient_role: 'client', channel: 'email', enabled: false, unisender_template_id: null, telegram_body: null, updated_at: NOW },
+  { trigger_event: 'BOOKING_REMINDER', recipient_role: 'client', channel: 'telegram', enabled: false, unisender_template_id: null, telegram_body: '', updated_at: NOW },
+  { trigger_event: 'BOOKING_REJECTED', recipient_role: 'client', channel: 'email', enabled: false, unisender_template_id: null, telegram_body: null, updated_at: NOW },
+  { trigger_event: 'BOOKING_REJECTED', recipient_role: 'client', channel: 'telegram', enabled: false, unisender_template_id: null, telegram_body: '', updated_at: NOW },
+  { trigger_event: 'BOOKING_REJECTED_BLACKLISTED', recipient_role: 'client', channel: 'email', enabled: false, unisender_template_id: null, telegram_body: null, updated_at: NOW },
+  { trigger_event: 'BOOKING_REJECTED_BLACKLISTED', recipient_role: 'client', channel: 'telegram', enabled: false, unisender_template_id: null, telegram_body: '', updated_at: NOW },
 ]
 
 const FAKE_TEMPLATES = [
@@ -56,7 +78,7 @@ const FAKE_TEMPLATES = [
 ]
 
 // ──────────────────────────────────────────────────────────────────────────────
-// Helpers
+// DOM helpers
 // ──────────────────────────────────────────────────────────────────────────────
 let container: HTMLElement
 
@@ -147,11 +169,11 @@ describe('NotificationsPage', () => {
     })
 
     expect(vi.mocked(putBinding)).toHaveBeenCalledTimes(2)
-    expect(vi.mocked(putBinding)).toHaveBeenCalledWith('BOOKING_CREATED', 'email', {
+    expect(vi.mocked(putBinding)).toHaveBeenCalledWith('BOOKING_CREATED', 'client', 'email', {
       enabled: true,
       unisender_template_id: 'tpl-1',
     })
-    expect(vi.mocked(putBinding)).toHaveBeenCalledWith('BOOKING_CREATED', 'telegram', {
+    expect(vi.mocked(putBinding)).toHaveBeenCalledWith('BOOKING_CREATED', 'client', 'telegram', {
       enabled: true,
       telegram_body: 'Привет, {{ client_name }}!',
     })
@@ -195,5 +217,50 @@ describe('NotificationsPage', () => {
     await flushAsync()
 
     expect(container.textContent).toContain('Не удалось загрузить настройки уведомлений')
+  })
+
+  it('switches role tabs and saves with the active role', async () => {
+    const putBindingMock = vi.mocked(putBinding)
+    vi.mocked(getConfig).mockResolvedValue({
+      bindings: [
+        mkBinding('BOOKING_CREATED', 'client', 'email', { unisender_template_id: 'tmpl-client' }),
+        mkBinding('BOOKING_CREATED', 'organizer', 'email', { unisender_template_id: 'tmpl-organizer' }),
+        mkBinding('BOOKING_CREATED', 'client', 'telegram', { telegram_body: 'cli' }),
+        mkBinding('BOOKING_CREATED', 'organizer', 'telegram', { telegram_body: 'org' }),
+      ],
+    })
+
+    mount()
+    await flushAsync()
+
+    // default tab = client — 'cli' body should be visible
+    const textareasBefore = Array.from(container.querySelectorAll<HTMLTextAreaElement>('textarea'))
+    expect(textareasBefore.some((t) => t.value === 'cli')).toBe(true)
+
+    // switch to organizer tab
+    const buttons = Array.from(container.querySelectorAll<HTMLButtonElement>('button'))
+    const orgBtn = buttons.find((b) => b.textContent?.trim() === 'Волонтёр')
+    expect(orgBtn).toBeDefined()
+
+    await act(async () => {
+      orgBtn!.click()
+      await Promise.resolve()
+    })
+
+    // 'org' body should now be visible
+    const textareasAfter = Array.from(container.querySelectorAll<HTMLTextAreaElement>('textarea'))
+    expect(textareasAfter.some((t) => t.value === 'org')).toBe(true)
+
+    // click the first save button
+    const saveButtons = Array.from(container.querySelectorAll<HTMLButtonElement>('button'))
+    const saveBtn = saveButtons.find((b) => b.textContent?.includes('Сохранить'))
+    expect(saveBtn).toBeDefined()
+
+    await act(async () => {
+      saveBtn!.click()
+      await Promise.resolve()
+    })
+
+    expect(putBindingMock).toHaveBeenCalledWith('BOOKING_CREATED', 'organizer', 'email', expect.anything())
   })
 })

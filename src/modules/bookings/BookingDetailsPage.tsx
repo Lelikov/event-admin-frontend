@@ -3,7 +3,7 @@ import { ApiError } from '../shared/api.ts'
 import { formatDateTime } from '../shared/format.ts'
 import { navigateTo } from '../shared/routing.ts'
 import { useTimeZone } from '../settings/useTimeZone.ts'
-import { getBookingDetails } from './bookingsApi.ts'
+import { getBookingDetails, sendClientReminder } from './bookingsApi.ts'
 import {
   getBookingStatusLabel,
   getChatEventIcon,
@@ -18,6 +18,16 @@ import type { BookingDetails, LifecycleEvent, VideoEvent } from './types.ts'
 import { UserInfo } from '../shared/UserInfo.tsx'
 import { EmailChangeModal } from '../participants/EmailChangeModal.tsx'
 import { getCachedUser } from '../shared/userBatchLoader.ts'
+
+const REMINDER_INELIGIBLE_STATUSES = new Set(['cancelled', 'completed', 'no_show'])
+
+function canSendReminder(item: BookingDetails): boolean {
+  const clientUserId = item.current_client_participant?.user_id ?? null
+  if (!clientUserId) return false
+  if (REMINDER_INELIGIBLE_STATUSES.has(item.current_status ?? '')) return false
+  if (!item.start_time) return false
+  return new Date(item.start_time).getTime() > Date.now()
+}
 
 type BookingDetailsPageProps = {
   bookingUid: string
@@ -281,6 +291,11 @@ export function BookingDetailsPage({ bookingUid }: BookingDetailsPageProps) {
   const [editingClientEmail, setEditingClientEmail] = useState<{ id: string; email: string } | null>(null)
   // Bumping the counter re-runs the load effect (used after email change/reassign).
   const [reloadCounter, setReloadCounter] = useState(0)
+  const [reminderState, setReminderState] = useState<{ sending: boolean; ok: string | null; error: string | null }>({
+    sending: false,
+    ok: null,
+    error: null,
+  })
 
   useEffect(() => {
     let cancelled = false
@@ -309,6 +324,21 @@ export function BookingDetailsPage({ bookingUid }: BookingDetailsPageProps) {
       cancelled = true
     }
   }, [bookingUid, reloadCounter])
+
+  async function handleSendReminder(item: BookingDetails) {
+    if (!window.confirm('Отправить клиенту письмо-напоминание о встрече?')) return
+    setReminderState({ sending: true, ok: null, error: null })
+    try {
+      const res = await sendClientReminder(item.booking_uid)
+      setReminderState({ sending: false, ok: res.email, error: null })
+    } catch (err) {
+      setReminderState({
+        sending: false,
+        ok: null,
+        error: err instanceof ApiError ? err.message : 'Не удалось отправить напоминание',
+      })
+    }
+  }
 
   return (
     <>
@@ -376,6 +406,25 @@ export function BookingDetailsPage({ bookingUid }: BookingDetailsPageProps) {
                   </button>
                 )}
               </p>
+              <div style={{ marginTop: '8px', display: 'grid', gap: '4px' }}>
+                <button
+                  type="button"
+                  className="secondary small"
+                  disabled={!canSendReminder(item) || reminderState.sending}
+                  title={canSendReminder(item) ? '' : 'Доступно только для будущей активной встречи с привязанным аккаунтом клиента'}
+                  onClick={() => void handleSendReminder(item)}
+                >
+                  {reminderState.sending ? 'Отправка…' : 'Отправить напоминание клиенту'}
+                </button>
+                {reminderState.ok && (
+                  <span style={{ fontSize: '12px', color: 'var(--success)' }}>
+                    Отправлено на {reminderState.ok}
+                  </span>
+                )}
+                {reminderState.error && (
+                  <span className="error-text" style={{ fontSize: '12px' }}>{reminderState.error}</span>
+                )}
+              </div>
             </div>
           </article>
 

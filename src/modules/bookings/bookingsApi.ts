@@ -43,3 +43,15 @@ export function getBookingDetails(bookingUid: string): Promise<BookingDetails> {
 export function getFutureEmailBouncedBookings(): Promise<FutureEmailBouncedBooking[]> {
   return apiRequest<FutureEmailBouncedBooking[]>('/bookings/future-email-bounced')
 }
+
+export type SendClientReminderResult = {
+  status: string
+  email: string
+}
+
+export function sendClientReminder(bookingUid: string): Promise<SendClientReminderResult> {
+  return apiRequest<SendClientReminderResult>(
+    `/bookings/${encodeURIComponent(bookingUid)}/send-client-reminder`,
+    { method: 'POST' },
+  )
+}

@@ -1,29 +1,22 @@
-import { afterEach, describe, expect, it, vi, beforeEach } from 'vitest'
-import { render, screen, waitFor, cleanup } from '@testing-library/react'
-import userEvent from '@testing-library/user-event'
+/**
+ * BookingDetailsPage — send-client-reminder button tests.
+ *
+ * Strategy: mock ./bookingsApi at the module level, stub window.confirm, mount
+ * into happy-dom via createRoot, and drive/assert through the DOM. No external
+ * test-renderer library — vitest + happy-dom is enough (repo convention).
+ */
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { createRoot, type Root } from 'react-dom/client'
+import { act } from 'react'
 import { BookingDetailsPage } from './BookingDetailsPage.tsx'
-import * as api from './bookingsApi.ts'
 import type { BookingDetails } from './types.ts'
 
-vi.mock('./bookingsApi.ts')
-
-// Mock useTimeZone — the hook throws outside a provider
-vi.mock('../settings/useTimeZone.ts', () => ({
-  useTimeZone: () => ({ timeZone: 'UTC', availableTimeZones: [], setTimeZone: vi.fn() }),
+vi.mock('./bookingsApi.ts', () => ({
+  getBookingDetails: vi.fn(),
+  sendClientReminder: vi.fn(),
 }))
-
-// Mock UserInfo to avoid the batch-loader network calls
-vi.mock('../shared/UserInfo.tsx', () => ({
-  UserInfo: ({ userId }: { userId?: string | null }) =>
-    userId ? <span data-testid="user-info">{userId}</span> : <span>—</span>,
-}))
-
-// Mock EmailChangeModal — not under test here
-vi.mock('../participants/EmailChangeModal.tsx', () => ({
-  EmailChangeModal: () => null,
-}))
-
-// Mock userBatchLoader.getCachedUser used inside the change-email button handler
+vi.mock('../shared/UserInfo.tsx', () => ({ UserInfo: () => null }))
+vi.mock('../participants/EmailChangeModal.tsx', () => ({ EmailChangeModal: () => null }))
 vi.mock('../shared/userBatchLoader.ts', () => ({
   getCachedUser: vi.fn(() => null),
   getUserCacheVersion: vi.fn(() => 0),
@@ -33,11 +26,12 @@ vi.mock('../shared/userBatchLoader.ts', () => ({
   invalidateUser: vi.fn(),
   clearUserCache: vi.fn(),
 }))
-
-// navigateTo would call history.pushState — stub it out
-vi.mock('../shared/routing.ts', () => ({
-  navigateTo: vi.fn(),
+vi.mock('../settings/useTimeZone.ts', () => ({
+  useTimeZone: () => ({ timeZone: 'UTC', availableTimeZones: [], setTimeZone: vi.fn() }),
 }))
+vi.mock('../shared/routing.ts', () => ({ navigateTo: vi.fn() }))
+
+import { getBookingDetails, sendClientReminder } from './bookingsApi.ts'
 
 const FUTURE = new Date(Date.now() + 86_400_000).toISOString()
 const PAST = new Date(Date.now() - 86_400_000).toISOString()
@@ -63,38 +57,69 @@ function details(overrides: Partial<BookingDetails> = {}): BookingDetails {
   } as BookingDetails
 }
 
+let container: HTMLElement
+let root: Root
+
+function mount() {
+  root = createRoot(container)
+  act(() => {
+    root.render(<BookingDetailsPage bookingUid="b1" />)
+  })
+}
+
+async function flushAsync() {
+  await act(async () => {
+    await Promise.resolve()
+    await Promise.resolve()
+  })
+}
+
+function reminderButton(): HTMLButtonElement | null {
+  const buttons = Array.from(container.querySelectorAll('button'))
+  return (buttons.find((b) => b.textContent?.includes('Отправить напоминание клиенту')) as HTMLButtonElement) ?? null
+}
+
 beforeEach(() => {
-  vi.resetAllMocks()
-  vi.mocked(api.getBookingDetails).mockResolvedValue(details())
+  container = document.createElement('div')
+  document.body.appendChild(container)
+  vi.mocked(getBookingDetails).mockResolvedValue(details())
+  vi.stubGlobal('confirm', vi.fn(() => true))
 })
 
 afterEach(() => {
-  cleanup()
+  act(() => root.unmount())
+  document.body.removeChild(container)
+  vi.clearAllMocks()
+  vi.unstubAllGlobals()
 })
-
-const reminderButton = () => screen.getByRole('button', { name: /Отправить напоминание клиенту/i })
 
 describe('send client reminder', () => {
   it('enables and sends for an eligible booking', async () => {
-    vi.stubGlobal('confirm', vi.fn().mockReturnValue(true))
-    vi.mocked(api.sendClientReminder).mockResolvedValue({ status: 'accepted', email: 'cur@x.com' })
-    render(<BookingDetailsPage bookingUid="b1" />)
-    const btn = await waitFor(() => reminderButton())
-    expect(btn).toBeEnabled()
-    await userEvent.click(btn)
-    await waitFor(() => expect(api.sendClientReminder).toHaveBeenCalledWith('b1'))
-    expect(await screen.findByText(/cur@x\.com/)).toBeInTheDocument()
+    vi.mocked(sendClientReminder).mockResolvedValue({ status: 'accepted', email: 'cur@x.com' })
+    mount()
+    await flushAsync()
+    const btn = reminderButton()
+    expect(btn).not.toBeNull()
+    expect(btn!.disabled).toBe(false)
+    act(() => {
+      btn!.click()
+    })
+    await flushAsync()
+    expect(vi.mocked(sendClientReminder)).toHaveBeenCalledWith('b1')
+    expect(container.textContent).toContain('cur@x.com')
   })
 
   it('disables for a past booking', async () => {
-    vi.mocked(api.getBookingDetails).mockResolvedValue(details({ start_time: PAST }))
-    render(<BookingDetailsPage bookingUid="b1" />)
-    expect(await waitFor(() => reminderButton())).toBeDisabled()
+    vi.mocked(getBookingDetails).mockResolvedValue(details({ start_time: PAST }))
+    mount()
+    await flushAsync()
+    expect(reminderButton()!.disabled).toBe(true)
   })
 
   it('disables when the client has no account', async () => {
-    vi.mocked(api.getBookingDetails).mockResolvedValue(details({ current_client_participant: { user_id: null } }))
-    render(<BookingDetailsPage bookingUid="b1" />)
-    expect(await waitFor(() => reminderButton())).toBeDisabled()
+    vi.mocked(getBookingDetails).mockResolvedValue(details({ current_client_participant: { user_id: null } }))
+    mount()
+    await flushAsync()
+    expect(reminderButton()!.disabled).toBe(true)
   })
 })

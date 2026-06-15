@@ -405,26 +405,31 @@ export function BookingDetailsPage({ bookingUid }: BookingDetailsPageProps) {
                     Изменить email
                   </button>
                 )}
+                {item.current_client_participant?.user_id && (
+                  <button
+                    type="button"
+                    className="secondary small"
+                    disabled={!canSendReminder(item) || reminderState.sending}
+                    title={canSendReminder(item) ? '' : 'Доступно только для будущей активной встречи с привязанным аккаунтом клиента'}
+                    onClick={() => void handleSendReminder(item)}
+                    style={{ marginLeft: '0.5rem' }}
+                  >
+                    {reminderState.sending ? 'Отправка…' : 'Отправить напоминание'}
+                  </button>
+                )}
               </p>
-              <div style={{ marginTop: '8px', display: 'grid', gap: '4px' }}>
-                <button
-                  type="button"
-                  className="secondary small"
-                  disabled={!canSendReminder(item) || reminderState.sending}
-                  title={canSendReminder(item) ? '' : 'Доступно только для будущей активной встречи с привязанным аккаунтом клиента'}
-                  onClick={() => void handleSendReminder(item)}
-                >
-                  {reminderState.sending ? 'Отправка…' : 'Отправить напоминание клиенту'}
-                </button>
-                {reminderState.ok && (
-                  <span style={{ fontSize: '12px', color: 'var(--success)' }}>
-                    Отправлено на {reminderState.ok}
-                  </span>
-                )}
-                {reminderState.error && (
-                  <span className="error-text" style={{ fontSize: '12px' }}>{reminderState.error}</span>
-                )}
-              </div>
+              {(reminderState.ok || reminderState.error) && (
+                <p style={{ marginTop: '4px' }}>
+                  {reminderState.ok && (
+                    <span style={{ fontSize: '12px', color: 'var(--success)' }}>
+                      Отправлено на {reminderState.ok}
+                    </span>
+                  )}
+                  {reminderState.error && (
+                    <span className="error-text" style={{ fontSize: '12px' }}>{reminderState.error}</span>
+                  )}
+                </p>
+              )}
             </div>
           </article>
 

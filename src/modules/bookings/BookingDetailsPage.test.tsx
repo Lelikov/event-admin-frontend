@@ -76,7 +76,7 @@ async function flushAsync() {
 
 function reminderButton(): HTMLButtonElement | null {
   const buttons = Array.from(container.querySelectorAll('button'))
-  return (buttons.find((b) => b.textContent?.includes('Отправить напоминание клиенту')) as HTMLButtonElement) ?? null
+  return (buttons.find((b) => b.textContent?.includes('Отправить напоминание')) as HTMLButtonElement) ?? null
 }
 
 beforeEach(() => {
@@ -116,10 +116,10 @@ describe('send client reminder', () => {
     expect(reminderButton()!.disabled).toBe(true)
   })
 
-  it('disables when the client has no account', async () => {
+  it('hides the button when the client has no account', async () => {
     vi.mocked(getBookingDetails).mockResolvedValue(details({ current_client_participant: { user_id: null } }))
     mount()
     await flushAsync()
-    expect(reminderButton()!.disabled).toBe(true)
+    expect(reminderButton()).toBeNull()
   })
 })

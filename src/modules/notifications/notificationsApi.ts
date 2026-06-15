@@ -1,7 +1,10 @@
 import { apiRequest } from '../shared/api.ts'
 
+export type RecipientRole = 'client' | 'organizer'
+
 export type Binding = {
   trigger_event: string
+  recipient_role: RecipientRole
   channel: string
   enabled: boolean
   unisender_template_id: string | null
@@ -38,11 +41,12 @@ export async function getConfig(): Promise<GetConfigResponse> {
 
 export async function putBinding(
   triggerEvent: string,
+  recipientRole: RecipientRole,
   channel: string,
   body: PutBindingBody,
 ): Promise<{ status: string }> {
   return apiRequest<{ status: string }>(
-    `/api/notifications/config/${encodeURIComponent(triggerEvent)}/${encodeURIComponent(channel)}`,
+    `/api/notifications/config/${encodeURIComponent(triggerEvent)}/${encodeURIComponent(recipientRole)}/${encodeURIComponent(channel)}`,
     { method: 'PUT', body },
   )
 }

@@ -12,8 +12,8 @@ export const NotificationStatus = {
   SENT: 'sent',
   DELIVERED: 'delivered',
   CLICKED: 'clicked',
-  SOFT_BOUNCED: 'soft_bounced',
-  HARD_BOUNCED: 'hard_bounced',
+  SOFT_BOUNCED: 'soft_bounce',
+  HARD_BOUNCED: 'hard_bounce',
 } as const
 
 export const TriggerEvent = {

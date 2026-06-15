@@ -55,9 +55,14 @@ const TRIGGER_EVENT_LABELS: Record<string, string> = {
 }
 
 const CHAT_EVENT_LABELS: Record<string, string> = {
+  // GetStream-sourced (native webhook types)
   [ChatEventType.CHANNEL_CREATED]: 'Канал создан',
   [ChatEventType.CHANNEL_DELETED]: 'Канал удалён',
   [ChatEventType.MESSAGE_NEW]: 'Новое сообщение',
+  // booking-sourced (event-booking's own chat lifecycle events, EventType.CHAT_*)
+  'chat.created': 'Чат создан',
+  'chat.deleted': 'Чат удалён',
+  'chat.message_sent': 'Сообщение отправлено',
 }
 
 const PARTICIPANT_ROLE_LABELS: Record<string, string> = {
@@ -121,10 +126,13 @@ export function getChatEventLabel(chatEventType: string | null | undefined): str
 export function getChatEventIcon(chatEventType: string | null | undefined): string {
   switch (chatEventType) {
     case ChatEventType.CHANNEL_CREATED:
+    case 'chat.created':
       return '➕'
     case ChatEventType.CHANNEL_DELETED:
+    case 'chat.deleted':
       return '➖'
     case ChatEventType.MESSAGE_NEW:
+    case 'chat.message_sent':
       return '💬'
     default:
       return '•'

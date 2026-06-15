@@ -1,5 +1,15 @@
 import { describe, expect, it } from 'vitest'
-import { getVideoEventLabel } from './statuses.ts'
+import { getChatEventLabel, getVideoEventLabel } from './statuses.ts'
+
+describe('getChatEventLabel', () => {
+  it('maps GetStream-native and booking-sourced chat types to Russian', () => {
+    expect(getChatEventLabel('channel.created')).toBe('Канал создан')
+    expect(getChatEventLabel('message.new')).toBe('Новое сообщение')
+    expect(getChatEventLabel('chat.created')).toBe('Чат создан')
+    expect(getChatEventLabel('chat.deleted')).toBe('Чат удалён')
+    expect(getChatEventLabel('chat.message_sent')).toBe('Сообщение отправлено')
+  })
+})
 
 describe('getVideoEventLabel', () => {
   // booking_video_events.video_event_type is the dotted jitsi.* type (prefix stripped).

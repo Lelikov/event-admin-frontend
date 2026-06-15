@@ -65,6 +65,27 @@ const PARTICIPANT_ROLE_LABELS: Record<string, string> = {
   client: 'Клиент',
 }
 
+// Keyed by booking_video_events.video_event_type — the jitsi.* CloudEvent type
+// with the `jitsi.` prefix stripped (dotted form, e.g. 'conference.joined').
+const VIDEO_EVENT_LABELS: Record<string, string> = {
+  'conference.joined': 'Присоединился к звонку',
+  'conference.left': 'Вышел из звонка',
+  'participant.joined': 'Участник присоединился',
+  'participant.left': 'Участник вышел',
+  'participant.muted': 'Изменение mute-статуса',
+  'participant.menu_button_click': 'Действие в меню участника',
+  'audio.mute_status_changed': 'Микрофон',
+  'video.mute_status_changed': 'Камера',
+  'speaker.dominant_changed': 'Смена активного спикера',
+  'device.list_changed': 'Изменение списка устройств',
+  'toolbar.button_clicked': 'Нажата кнопка панели',
+  'camera.error': 'Ошибка камеры',
+  'mic.error': 'Ошибка микрофона',
+  'error.occurred': 'Ошибка конференции',
+  'peer_connection.failure': 'Сбой соединения',
+  'suspend.detected': 'Устройство приостановлено',
+}
+
 function fallback(value: unknown): string {
   if (value === null || value === undefined) {
     return 'Нет статуса'
@@ -112,6 +133,10 @@ export function getChatEventIcon(chatEventType: string | null | undefined): stri
 
 export function getParticipantRoleLabel(role: string | null | undefined): string {
   return (role != null ? PARTICIPANT_ROLE_LABELS[role] : undefined) ?? fallback(role)
+}
+
+export function getVideoEventLabel(videoEventType: string | null | undefined): string {
+  return (videoEventType != null ? VIDEO_EVENT_LABELS[videoEventType] : undefined) ?? fallback(videoEventType)
 }
 
 export const LifecycleAction = {

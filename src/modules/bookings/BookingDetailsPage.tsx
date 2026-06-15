@@ -12,6 +12,7 @@ import {
   getNotificationStatusLabel,
   getParticipantRoleLabel,
   getTriggerEventLabel,
+  getVideoEventLabel,
   isNotificationBounceStatus,
 } from './statuses.ts'
 import type { BookingDetails, LifecycleEvent, VideoEvent } from './types.ts'
@@ -105,7 +106,7 @@ function describeAccess(kind: DeviceKind, devices: unknown): ReactNode {
 function getVideoEventIconMeta(
   event: VideoEvent,
 ): { icon: string; tone: 'is-positive' | 'is-negative' | 'is-neutral' } {
-  if (event.video_event_type === 'audioMuteStatusChanged') {
+  if (event.video_event_type === 'audio.mute_status_changed') {
     const muted =
       typeof event.payload === 'object' && event.payload !== null && 'muted' in event.payload
         ? Boolean(event.payload.muted)
@@ -113,7 +114,7 @@ function getVideoEventIconMeta(
     return { icon: '🎤', tone: muted ? 'is-negative' : 'is-positive' }
   }
 
-  if (event.video_event_type === 'videoMuteStatusChanged') {
+  if (event.video_event_type === 'video.mute_status_changed') {
     const muted =
       typeof event.payload === 'object' && event.payload !== null && 'muted' in event.payload
         ? Boolean(event.payload.muted)
@@ -121,7 +122,7 @@ function getVideoEventIconMeta(
     return { icon: '📷', tone: muted ? 'is-negative' : 'is-positive' }
   }
 
-  if (event.video_event_type === 'participantMuted') {
+  if (event.video_event_type === 'participant.muted') {
     const mediaType =
       typeof event.payload === 'object' && event.payload !== null && 'mediaType' in event.payload
         ? String(event.payload.mediaType)
@@ -141,18 +142,27 @@ function getVideoEventIconMeta(
   }
 
   switch (event.video_event_type) {
-    case 'deviceListChanged':
+    case 'device.list_changed':
       return { icon: '🧩', tone: 'is-neutral' }
-    case 'participantJoined':
-    case 'videoConferenceJoined':
+    case 'participant.joined':
+    case 'conference.joined':
       return { icon: '✅', tone: 'is-positive' }
-    case 'participantLeft':
-    case 'videoConferenceLeft':
+    case 'participant.left':
+    case 'conference.left':
       return { icon: '🚪', tone: 'is-negative' }
-    case 'dominantSpeakerChanged':
+    case 'speaker.dominant_changed':
       return { icon: '🗣️', tone: 'is-neutral' }
-    case 'errorOccurred':
+    case 'toolbar.button_clicked':
+      return { icon: '🔘', tone: 'is-neutral' }
+    case 'participant.menu_button_click':
+      return { icon: '⋯', tone: 'is-neutral' }
+    case 'camera.error':
+    case 'mic.error':
+    case 'error.occurred':
+    case 'peer_connection.failure':
       return { icon: '⚠️', tone: 'is-negative' }
+    case 'suspend.detected':
+      return { icon: '💤', tone: 'is-neutral' }
     default:
       return { icon: '•', tone: 'is-neutral' }
   }
@@ -161,7 +171,7 @@ function getVideoEventIconMeta(
 function getVideoEventDescription(event: VideoEvent): ReactNode {
   const payload = event.payload ?? {}
 
-  if (event.video_event_type === 'deviceListChanged') {
+  if (event.video_event_type === 'device.list_changed') {
     const devices =
       typeof payload === 'object' && payload !== null && 'devices' in payload
         ? (payload.devices as Record<string, unknown>)
@@ -176,7 +186,7 @@ function getVideoEventDescription(event: VideoEvent): ReactNode {
     )
   }
 
-  if (event.video_event_type === 'audioMuteStatusChanged') {
+  if (event.video_event_type === 'audio.mute_status_changed') {
     const muted =
       typeof payload === 'object' && payload !== null && 'muted' in payload
         ? Boolean(payload.muted)
@@ -184,7 +194,7 @@ function getVideoEventDescription(event: VideoEvent): ReactNode {
     return muted ? 'Микрофон выключен' : 'Микрофон включен'
   }
 
-  if (event.video_event_type === 'videoMuteStatusChanged') {
+  if (event.video_event_type === 'video.mute_status_changed') {
     const muted =
       typeof payload === 'object' && payload !== null && 'muted' in payload
         ? Boolean(payload.muted)
@@ -192,7 +202,7 @@ function getVideoEventDescription(event: VideoEvent): ReactNode {
     return muted ? 'Камера выключена' : 'Камера включена'
   }
 
-  if (event.video_event_type === 'participantMuted') {
+  if (event.video_event_type === 'participant.muted') {
     const mediaType =
       typeof payload === 'object' && payload !== null && 'mediaType' in payload
         ? String(payload.mediaType)
@@ -213,19 +223,15 @@ function getVideoEventDescription(event: VideoEvent): ReactNode {
     return 'Изменение mute-статуса участника'
   }
 
-  if (event.video_event_type === 'participantJoined' || event.video_event_type === 'videoConferenceJoined') {
+  if (event.video_event_type === 'participant.joined' || event.video_event_type === 'conference.joined') {
     return 'Участник присоединился к звонку'
   }
 
-  if (event.video_event_type === 'participantLeft' || event.video_event_type === 'videoConferenceLeft') {
+  if (event.video_event_type === 'participant.left' || event.video_event_type === 'conference.left') {
     return 'Участник вышел из звонка'
   }
 
-  if (event.video_event_type === 'dominantSpeakerChanged') {
-    return 'Смена активного спикера'
-  }
-
-  if (event.video_event_type === 'errorOccurred') {
+  if (event.video_event_type === 'error.occurred') {
     const message =
       typeof payload === 'object' && payload !== null && 'error' in payload
         ? (payload.error as { name?: string; params?: unknown[] })
@@ -236,7 +242,7 @@ function getVideoEventDescription(event: VideoEvent): ReactNode {
     return `Ошибка конференции${errorName}${errorText ? `: ${errorText}` : ''}`
   }
 
-  return `Событие: ${event.video_event_type}`
+  return getVideoEventLabel(event.video_event_type)
 }
 
 function getLifecycleDetails(event: LifecycleEvent, timeZone: string | undefined): ReactNode {

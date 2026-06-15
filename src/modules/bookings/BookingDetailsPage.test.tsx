@@ -74,35 +74,45 @@ async function flushAsync() {
   })
 }
 
-function reminderButton(): HTMLButtonElement | null {
+function buttonByText(text: string): HTMLButtonElement | null {
   const buttons = Array.from(container.querySelectorAll('button'))
-  return (buttons.find((b) => b.textContent?.includes('Отправить напоминание')) as HTMLButtonElement) ?? null
+  return (buttons.find((b) => b.textContent?.includes(text)) as HTMLButtonElement) ?? null
+}
+
+function reminderButton(): HTMLButtonElement | null {
+  return buttonByText('Отправить напоминание')
 }
 
 beforeEach(() => {
   container = document.createElement('div')
   document.body.appendChild(container)
   vi.mocked(getBookingDetails).mockResolvedValue(details())
-  vi.stubGlobal('confirm', vi.fn(() => true))
 })
 
 afterEach(() => {
   act(() => root.unmount())
   document.body.removeChild(container)
   vi.clearAllMocks()
-  vi.unstubAllGlobals()
 })
 
 describe('send client reminder', () => {
-  it('enables and sends for an eligible booking', async () => {
+  it('confirms via modal then sends for an eligible booking', async () => {
     vi.mocked(sendClientReminder).mockResolvedValue({ status: 'accepted', email: 'cur@x.com' })
     mount()
     await flushAsync()
     const btn = reminderButton()
     expect(btn).not.toBeNull()
     expect(btn!.disabled).toBe(false)
+    // Opening the confirm modal must not send yet.
     act(() => {
       btn!.click()
+    })
+    await flushAsync()
+    expect(vi.mocked(sendClientReminder)).not.toHaveBeenCalled()
+    const confirm = buttonByText('Да, отправить')
+    expect(confirm).not.toBeNull()
+    act(() => {
+      confirm!.click()
     })
     await flushAsync()
     expect(vi.mocked(sendClientReminder)).toHaveBeenCalledWith('b1')

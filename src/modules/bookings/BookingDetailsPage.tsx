@@ -296,6 +296,7 @@ export function BookingDetailsPage({ bookingUid }: BookingDetailsPageProps) {
     ok: null,
     error: null,
   })
+  const [confirmingReminder, setConfirmingReminder] = useState(false)
 
   useEffect(() => {
     let cancelled = false
@@ -326,7 +327,7 @@ export function BookingDetailsPage({ bookingUid }: BookingDetailsPageProps) {
   }, [bookingUid, reloadCounter])
 
   async function handleSendReminder(item: BookingDetails) {
-    if (!window.confirm('Отправить клиенту письмо-напоминание о встрече?')) return
+    setConfirmingReminder(false)
     setReminderState({ sending: true, ok: null, error: null })
     try {
       const res = await sendClientReminder(item.booking_uid)
@@ -411,7 +412,7 @@ export function BookingDetailsPage({ bookingUid }: BookingDetailsPageProps) {
                     className="secondary small"
                     disabled={!canSendReminder(item) || reminderState.sending}
                     title={canSendReminder(item) ? '' : 'Доступно только для будущей активной встречи с привязанным аккаунтом клиента'}
-                    onClick={() => void handleSendReminder(item)}
+                    onClick={() => setConfirmingReminder(true)}
                     style={{ marginLeft: '0.5rem' }}
                   >
                     {reminderState.sending ? 'Отправка…' : 'Отправить напоминание'}
@@ -662,6 +663,38 @@ export function BookingDetailsPage({ bookingUid }: BookingDetailsPageProps) {
           setReloadCounter((counter) => counter + 1)
         }}
       />
+    )}
+    {confirmingReminder && item && (
+      <div className="modal-overlay" onClick={() => setConfirmingReminder(false)}>
+        <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+          <div className="modal-header">
+            <h2>Отправить напоминание</h2>
+            <button type="button" className="modal-close" onClick={() => setConfirmingReminder(false)}>
+              &times;
+            </button>
+          </div>
+          <div className="modal-body">
+            <p>
+              Отправить клиенту{' '}
+              <strong>
+                <UserInfo userId={item.current_client_participant?.user_id} />
+              </strong>{' '}
+              письмо-напоминание о встрече?
+            </p>
+            <p className="muted" style={{ fontSize: '0.85rem', marginTop: '0.5rem' }}>
+              Письмо уйдёт на актуальный email клиента.
+            </p>
+            <div className="inline-actions" style={{ marginTop: '1rem' }}>
+              <button type="button" onClick={() => void handleSendReminder(item)}>
+                Да, отправить
+              </button>
+              <button type="button" className="secondary" onClick={() => setConfirmingReminder(false)}>
+                Отмена
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
     )}
     </>
   )

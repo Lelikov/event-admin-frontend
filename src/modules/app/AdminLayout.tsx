@@ -37,6 +37,11 @@ const NAV_ITEMS: NavItem[] = [
     path: '/blacklist',
     match: (pathname) => pathname === '/blacklist',
   },
+  {
+    label: 'Уведомления',
+    path: '/notifications',
+    match: (pathname) => pathname === '/notifications',
+  },
 ]
 
 type TimeZonePickerProps = {

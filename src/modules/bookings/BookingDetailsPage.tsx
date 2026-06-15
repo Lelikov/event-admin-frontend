@@ -589,7 +589,8 @@ export function BookingDetailsPage({ bookingUid }: BookingDetailsPageProps) {
                     <a href={link.meeting_url} target="_blank" rel="noreferrer">
                       <UserInfo userId={link.participant.user_id} fallback="Ссылка" variant="name" />
                     </a>{' '}
-                    <span className="muted">· {formatDateTime(link.created_at, timeZone)}</span>
+                    <span className="muted">· {formatDateTime(link.created_at, timeZone)}</span>{' '}
+                    <span className="muted">· переходов: {link.click_count ?? '—'}</span>
                   </li>
                 ))}
               </ul>

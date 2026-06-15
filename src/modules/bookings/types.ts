@@ -38,6 +38,7 @@ export type MeetingLink = {
   participant: Participant
   meeting_url: string
   created_at: string
+  click_count: number | null
 }
 
 export type NotificationStatusHistoryEntry = {

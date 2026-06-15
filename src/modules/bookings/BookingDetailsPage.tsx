@@ -29,6 +29,12 @@ function canSendReminder(item: BookingDetails): boolean {
   return new Date(item.start_time).getTime() > Date.now()
 }
 
+function reminderClientEmail(item: BookingDetails): string {
+  const clientUserId = item.current_client_participant?.user_id
+  if (!clientUserId) return ''
+  return getCachedUser(clientUserId)?.email ?? ''
+}
+
 type BookingDetailsPageProps = {
   bookingUid: string
 }
@@ -676,7 +682,7 @@ export function BookingDetailsPage({ bookingUid }: BookingDetailsPageProps) {
           <div className="modal-body">
             <p>Отправить клиенту письмо-напоминание о встрече?</p>
             <p className="muted" style={{ fontSize: '0.85rem', marginTop: '0.5rem' }}>
-              Письмо уйдёт на актуальный email клиента.
+              Письмо уйдёт на email <strong>{reminderClientEmail(item) || 'актуальный адрес клиента'}</strong>
             </p>
             <div className="inline-actions" style={{ marginTop: '1rem' }}>
               <button type="button" onClick={() => void handleSendReminder(item)}>

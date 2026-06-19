@@ -80,7 +80,7 @@ export function EmailChangeModal({ userId, currentEmail, bookingUid, onClose, on
 
     setSubmitting(true)
     try {
-      await requestEmailChange(userId, trimmed)
+      await requestEmailChange(userId, trimmed, bookingUid)
       // The change is applied asynchronously via RabbitMQ; dropping the cache
       // entry at least prevents the old email from being served indefinitely.
       invalidateUser(userId)

@@ -20,10 +20,14 @@ export async function reassignBookingClient(bookingUid: string, newClientEmail: 
   })
 }
 
-export async function requestEmailChange(userId: string, newEmail: string): Promise<void> {
+export async function requestEmailChange(
+  userId: string,
+  newEmail: string,
+  bookingUid?: string,
+): Promise<void> {
   await apiRequest(`/api/users/id/${userId}/change-email`, {
     method: 'POST',
-    body: { new_email: newEmail },
+    body: { new_email: newEmail, booking_uid: bookingUid },
   })
 }
 

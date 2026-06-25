@@ -467,17 +467,16 @@ export function BookingDetailsPage({ bookingUid }: BookingDetailsPageProps) {
                       </div>
                       <div>
                         {event.organizer_participant?.user_id && (
-                          <span>
+                          <div>
                             <span className="muted">Организатор: </span>
                             <UserInfo userId={event.organizer_participant.user_id} variant="inline" />
-                            {' '}
-                          </span>
+                          </div>
                         )}
                         {event.client_participant?.user_id && (
-                          <span>
+                          <div>
                             <span className="muted">Клиент: </span>
                             <UserInfo userId={event.client_participant.user_id} variant="inline" />
-                          </span>
+                          </div>
                         )}
                       </div>
                       {getLifecycleDetails(event, timeZone)}

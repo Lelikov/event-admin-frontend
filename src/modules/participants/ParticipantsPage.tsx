@@ -12,6 +12,26 @@ const ROLE_OPTIONS = [
   { value: 'client', label: 'Клиент' },
 ]
 
+const ROLE_LABELS: Record<string, string> = {
+  organizer: 'Организатор',
+  client: 'Клиент',
+}
+
+function roleBadgeClass(role: string): string {
+  if (role === 'organizer') return 'badge badge--plain badge--role-organizer'
+  if (role === 'client') return 'badge badge--plain badge--role-client'
+  return 'badge badge--plain badge--neutral'
+}
+
+function userInitials(user: UserItem): string {
+  if (user.name) {
+    const parts = user.name.split(/\s+/).slice(0, 2)
+    const joined = parts.map((w) => w[0]?.toUpperCase() ?? '').join('')
+    if (joined) return joined
+  }
+  return user.email[0]?.toUpperCase() ?? '?'
+}
+
 export function ParticipantsPage() {
   const { timeZone } = useTimeZone()
   const [items, setItems] = useState<UserItem[]>([])
@@ -65,7 +85,7 @@ export function ParticipantsPage() {
     <section className="stack">
       <header className="page-header">
         <div>
-          <p className="eyebrow">Users</p>
+          <p className="breadcrumb">Данные <span className="sep">/</span> Пользователи</p>
           <h1>Пользователи</h1>
         </div>
       </header>
@@ -122,10 +142,9 @@ export function ParticipantsPage() {
               <table>
                 <thead>
                   <tr>
-                    <th>ID</th>
-                    <th>Email</th>
-                    <th>Имя</th>
+                    <th>Пользователь</th>
                     <th>Роль</th>
+                    <th>ID</th>
                     <th>Часовой пояс</th>
                     <th>Дата регистрации</th>
                   </tr>
@@ -133,13 +152,24 @@ export function ParticipantsPage() {
                 <tbody>
                   {items.map((item) => (
                     <tr key={item.id}>
-                      <td className="muted tabular" title={item.id}>
-                        {item.id.slice(0, 8)}…
-                      </td>
-                      <td>{item.email}</td>
-                      <td>{item.name ?? <span className="muted">—</span>}</td>
                       <td>
-                        <span className="tag">{item.role}</span>
+                        <div className="cell-id">
+                          <span className="cell-avatar">{userInitials(item)}</span>
+                          <div className="cell-id-text">
+                            <div className="cell-id-name">{item.name ?? item.email}</div>
+                            {item.name && <div className="cell-id-sub">{item.email}</div>}
+                          </div>
+                        </div>
+                      </td>
+                      <td>
+                        <span className={roleBadgeClass(item.role)}>
+                          {ROLE_LABELS[item.role] ?? item.role}
+                        </span>
+                      </td>
+                      <td>
+                        <span className="id-chip" title={item.id}>
+                          {item.id.slice(0, 8)}
+                        </span>
                       </td>
                       <td>{item.time_zone ?? <span className="muted">—</span>}</td>
                       <td>{formatDateTime(item.created_at, timeZone)}</td>

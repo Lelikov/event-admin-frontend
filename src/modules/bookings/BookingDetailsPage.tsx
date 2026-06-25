@@ -5,7 +5,6 @@ import { navigateTo } from '../shared/routing.ts'
 import { useTimeZone } from '../settings/useTimeZone.ts'
 import { getBookingDetails, sendClientReminder } from './bookingsApi.ts'
 import {
-  getBookingStatusLabel,
   getChatEventIcon,
   getLifecycleActionIcon,
   getLifecycleActionLabel,
@@ -17,6 +16,7 @@ import {
 } from './statuses.ts'
 import type { BookingDetails, LifecycleEvent, VideoEvent } from './types.ts'
 import { UserInfo } from '../shared/UserInfo.tsx'
+import { StatusBadge } from '../shared/StatusBadge.tsx'
 import { EmailChangeModal } from '../participants/EmailChangeModal.tsx'
 import { getCachedUser } from '../shared/userBatchLoader.ts'
 
@@ -361,7 +361,7 @@ export function BookingDetailsPage({ bookingUid }: BookingDetailsPageProps) {
           <button type="button" className="back-button" onClick={() => navigateTo('/bookings')}>
             ← Назад к списку
           </button>
-          <p className="eyebrow">Booking details</p>
+          <p className="breadcrumb">Бронирования <span className="sep">/</span> Детали</p>
           <h1>{bookingUid}</h1>
         </div>
       </header>
@@ -375,7 +375,7 @@ export function BookingDetailsPage({ bookingUid }: BookingDetailsPageProps) {
             <div>
               <p className="muted">Статус</p>
               <p>
-                <span className="tag">{getBookingStatusLabel(item.current_status)}</span>
+                <StatusBadge status={item.current_status} />
               </p>
             </div>
             <div>
@@ -467,17 +467,16 @@ export function BookingDetailsPage({ bookingUid }: BookingDetailsPageProps) {
                       </div>
                       <div>
                         {event.organizer_participant?.user_id && (
-                          <span>
+                          <div>
                             <span className="muted">Организатор: </span>
                             <UserInfo userId={event.organizer_participant.user_id} variant="inline" />
-                            {' '}
-                          </span>
+                          </div>
                         )}
                         {event.client_participant?.user_id && (
-                          <span>
+                          <div>
                             <span className="muted">Клиент: </span>
                             <UserInfo userId={event.client_participant.user_id} variant="inline" />
-                          </span>
+                          </div>
                         )}
                       </div>
                       {getLifecycleDetails(event, timeZone)}

@@ -5,7 +5,8 @@ import { formatDateTime } from '../shared/format.ts'
 import { ApiError } from '../shared/api.ts'
 import { navigateTo } from '../shared/routing.ts'
 import { UserInfo } from '../shared/UserInfo.tsx'
-import { BOOKING_STATUS_FILTER_OPTIONS, getBookingStatusLabel } from './statuses.ts'
+import { BOOKING_STATUS_FILTER_OPTIONS } from './statuses.ts'
+import { StatusBadge } from '../shared/StatusBadge.tsx'
 import { useTimeZone } from '../settings/useTimeZone.ts'
 import { ParticipantPicker, type PickedParticipant } from '../shared/ParticipantPicker.tsx'
 import { StatusFilter } from '../shared/StatusFilter.tsx'
@@ -81,7 +82,7 @@ export function BookingsPage() {
     <section className="stack">
       <header className="page-header">
         <div>
-          <p className="eyebrow">Bookings</p>
+          <p className="breadcrumb">Данные <span className="sep">/</span> Бронирования</p>
           <h1>Список бронирований</h1>
         </div>
       </header>
@@ -170,7 +171,7 @@ export function BookingsPage() {
                       <td>
                         <button
                           type="button"
-                          className="link-button"
+                          className="uid-chip"
                           onClick={() =>
                             navigateTo(`/bookings/${encodeURIComponent(item.booking_uid)}`)
                           }
@@ -181,7 +182,7 @@ export function BookingsPage() {
                       <td>{formatDateTime(item.start_time, timeZone)}</td>
                       <td>{formatDateTime(item.end_time, timeZone)}</td>
                       <td>
-                        <span className="tag">{getBookingStatusLabel(item.current_status)}</span>
+                        <StatusBadge status={item.current_status} />
                       </td>
                       <td><UserInfo userId={item.organizer_participant?.user_id} variant="inline" /></td>
                       <td><UserInfo userId={item.client_participant?.user_id} variant="inline" /></td>

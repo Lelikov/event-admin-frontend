@@ -56,75 +56,95 @@ export function LoginPage() {
     }
   }
 
+  const showDevBypass =
+    import.meta.env.DEV && ENABLE_DEV_BYPASS_LOGIN && DEV_BYPASS_JWT !== ''
+
   return (
     <main className="login-shell">
-      <section className="login-card">
-        <h1>Event Admin</h1>
-        <p className="muted">Войдите через email, пароль и TOTP-код</p>
-
-        <form className="form" onSubmit={handleLogin}>
-          <label className="field">
-            <span>Email</span>
-            <input
-              type="email"
-              autoComplete="username"
-              placeholder="admin@example.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-            />
-          </label>
-
-          <label className="field">
-            <span>Пароль</span>
-            <input
-              type="password"
-              autoComplete="current-password"
-              placeholder="••••••••"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-            />
-          </label>
-
-          <label className="field">
-            <span>TOTP-код (6 цифр)</span>
-            <input
-              type="text"
-              inputMode="numeric"
-              placeholder="123456"
-              maxLength={6}
-              value={totpCode}
-              onChange={(e) => setTotpCode(e.target.value.replace(/\D/g, ''))}
-              required
-            />
-          </label>
-
-          <div className="inline-actions">
-            <button type="submit" disabled={loading || !canSubmit}>
-              {loading ? 'Входим…' : 'Войти'}
-            </button>
-
-            {import.meta.env.DEV && ENABLE_DEV_BYPASS_LOGIN && DEV_BYPASS_JWT !== '' && (
-              <button
-                type="button"
-                className="secondary"
-                onClick={() => {
-                  loginWithToken(DEV_BYPASS_JWT)
-                  navigateTo('/dashboard', { replace: true })
-                }}
-                disabled={loading}
-              >
-                Войти без TOTP (dev)
-              </button>
-            )}
+      <section className="login-split">
+        <aside className="login-brand">
+          <div className="login-brand-dots" />
+          <div className="login-brand-logo">
+            <div className="app-logo">EA</div>
+            <span>Event Admin</span>
           </div>
-        </form>
+          <div>
+            <h1>Панель управления<br />бронированиями</h1>
+            <p>Мониторинг встреч, проблемных уведомлений и чёрного списка в одном месте.</p>
+          </div>
+          <div className="login-brand-foot">Защищено TOTP · сессия 60 минут</div>
+        </aside>
 
-        {import.meta.env.DEV && ENABLE_DEV_BYPASS_LOGIN && DEV_BYPASS_JWT !== '' && (
-          <p className="hint">Dev bypass включён через VITE_ENABLE_DEV_BYPASS_LOGIN=true</p>
-        )}
-        {error && <p className="error-text">{error}</p>}
+        <div className="login-form-panel">
+          <div>
+            <p className="eyebrow">Вход в систему</p>
+            <h1>С возвращением</h1>
+          </div>
+
+          <form className="form" onSubmit={handleLogin}>
+            <label className="field">
+              <span>Email</span>
+              <input
+                type="email"
+                autoComplete="username"
+                placeholder="admin@example.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+              />
+            </label>
+
+            <label className="field">
+              <span>Пароль</span>
+              <input
+                type="password"
+                autoComplete="current-password"
+                placeholder="••••••••"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+              />
+            </label>
+
+            <label className="field">
+              <span>TOTP-код (6 цифр)</span>
+              <input
+                type="text"
+                inputMode="numeric"
+                placeholder="123456"
+                maxLength={6}
+                value={totpCode}
+                onChange={(e) => setTotpCode(e.target.value.replace(/\D/g, ''))}
+                required
+              />
+            </label>
+
+            <div className="inline-actions">
+              <button type="submit" disabled={loading || !canSubmit}>
+                {loading ? 'Входим…' : 'Войти'}
+              </button>
+
+              {showDevBypass && (
+                <button
+                  type="button"
+                  className="secondary"
+                  onClick={() => {
+                    loginWithToken(DEV_BYPASS_JWT)
+                    navigateTo('/dashboard', { replace: true })
+                  }}
+                  disabled={loading}
+                >
+                  Войти без TOTP (dev)
+                </button>
+              )}
+            </div>
+          </form>
+
+          {showDevBypass && (
+            <p className="hint">Dev bypass включён через VITE_ENABLE_DEV_BYPASS_LOGIN=true</p>
+          )}
+          {error && <p className="error-text">{error}</p>}
+        </div>
       </section>
     </main>
   )

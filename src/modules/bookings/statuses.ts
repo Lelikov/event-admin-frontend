@@ -188,3 +188,37 @@ export const BOOKING_STATUS_FILTER_OPTIONS: Array<{ value: string; label: string
   { value: BookingStatus.COMPLETED, label: getBookingStatusLabel(BookingStatus.COMPLETED) },
   { value: BookingStatus.CANCELLED, label: getBookingStatusLabel(BookingStatus.CANCELLED) },
 ]
+
+/* ─────────────────────────────────────────────
+   STATUS → VISUAL VARIANT (semantic colour coding)
+   Maps a booking status to a CSS modifier consumed by <StatusBadge>
+   (.badge--<variant> in index.css). Unknown statuses fall back to neutral.
+───────────────────────────────────────────── */
+export type BookingStatusVariant =
+  | 'created'
+  | 'confirmed'
+  | 'in_progress'
+  | 'completed'
+  | 'cancelled'
+  | 'rescheduled'
+  | 'neutral'
+
+const BOOKING_STATUS_VARIANTS: Record<string, BookingStatusVariant> = {
+  [BookingStatus.CREATED]: 'created',
+  [BookingStatus.CONFIRMED]: 'confirmed',
+  [BookingStatus.IN_PROGRESS]: 'in_progress',
+  [BookingStatus.COMPLETED]: 'completed',
+  [BookingStatus.CANCELLED]: 'cancelled',
+  [BookingStatus.RESCHEDULED]: 'rescheduled',
+}
+
+export function getBookingStatusVariant(status: string | null | undefined): BookingStatusVariant {
+  return (status != null ? BOOKING_STATUS_VARIANTS[status] : undefined) ?? 'neutral'
+}
+
+/** Severity for a bounced-email notification status: hard → danger, soft → warning. */
+export function getNotificationBounceVariant(status: string | null | undefined): 'danger' | 'warning' | 'neutral' {
+  if (status === NotificationStatus.HARD_BOUNCED) return 'danger'
+  if (status === NotificationStatus.SOFT_BOUNCED) return 'warning'
+  return 'neutral'
+}

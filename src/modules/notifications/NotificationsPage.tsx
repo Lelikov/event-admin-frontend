@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react'
 import { ApiError } from '../shared/api.ts'
+import { Switch } from '../shared/Switch.tsx'
+import { Icon } from '../shared/Icon.tsx'
 import {
   getConfig,
   getUnisenderTemplates,
@@ -180,186 +182,143 @@ export function NotificationsPage() {
     <section className="stack">
       <header className="page-header">
         <div>
-          <p className="eyebrow">Notifications</p>
+          <p className="breadcrumb">Настройки <span className="sep">/</span> Уведомления</p>
           <h1>Уведомления</h1>
         </div>
       </header>
 
-      <article className="card">
-        {loading && <p>Загрузка…</p>}
-        {loadError && <p className="error-text">{loadError}</p>}
+      {loading && <article className="card"><p>Загрузка…</p></article>}
+      {loadError && <article className="card"><p className="error-text">{loadError}</p></article>}
 
-        {!loading && !loadError && (
-          <>
-            <div className="tabs" role="tablist" style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
+      {!loading && !loadError && (
+        <>
+          <div className="notif-toolbar">
+            <div className="seg" role="tablist">
               {ROLES.map((r) => (
                 <button
                   key={r.value}
                   type="button"
                   role="tab"
                   aria-selected={role === r.value}
-                  className={role === r.value ? 'small' : 'secondary small'}
+                  className={role === r.value ? 'is-active' : ''}
                   onClick={() => setRole(r.value)}
                 >
                   {r.label}
                 </button>
               ))}
             </div>
-
-            <div style={{ marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <span className="muted" style={{ fontSize: '12px' }}>
-                Шаблоны UniSender
-              </span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              {templatesError && <span className="error-text" style={{ fontSize: '12px' }}>{templatesError}</span>}
               <button
                 type="button"
                 className="secondary small"
                 onClick={() => void handleRefreshTemplates()}
                 disabled={templatesLoading}
               >
-                {templatesLoading ? 'Обновление…' : 'Обновить'}
+                <Icon name="refresh" size={13} />
+                {templatesLoading ? 'Обновление…' : 'Обновить шаблоны UniSender'}
               </button>
-              {templatesError && <span className="error-text" style={{ fontSize: '12px' }}>{templatesError}</span>}
             </div>
+          </div>
 
-            <div className="table-wrap">
-              <table>
-                <thead>
-                  <tr>
-                    <th style={{ minWidth: '180px' }}>Событие</th>
-                    <th style={{ minWidth: '260px' }}>Email</th>
-                    <th style={{ minWidth: '320px' }}>Telegram</th>
-                    <th style={{ minWidth: '100px' }}></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {TRIGGER_EVENTS.map((trigger) => {
-                    const row = rows[trigger]
-                    if (!row) return null
-                    return (
-                      <tr key={trigger}>
-                        <td>
-                          <span style={{ fontSize: '13px', fontWeight: 500 }}>
-                            {TRIGGER_LABELS[trigger]}
-                          </span>
-                          <br />
-                          <span className="muted" style={{ fontSize: '11px' }}>{trigger}</span>
-                        </td>
+          <div className="notif-list">
+            {TRIGGER_EVENTS.map((trigger) => {
+              const row = rows[trigger]
+              if (!row) return null
+              return (
+                <div className="notif-card" key={trigger}>
+                  <div className="notif-card-head">
+                    <div className="notif-title">
+                      <h2>{TRIGGER_LABELS[trigger]}</h2>
+                      <span className="notif-code">{trigger}</span>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      {row.saveOk && (
+                        <span style={{ fontSize: '12px', color: 'var(--success)', fontWeight: 600 }}>Сохранено</span>
+                      )}
+                      {row.saveError && <span className="error-text" style={{ fontSize: '12px' }}>{row.saveError}</span>}
+                      <button type="button" onClick={() => void handleSave(trigger)} disabled={row.saving}>
+                        {row.saving ? 'Сохранение…' : 'Сохранить'}
+                      </button>
+                    </div>
+                  </div>
 
-                        <td>
-                          <div style={{ display: 'grid', gap: '6px' }}>
-                            <label className="checkbox-field" style={{ paddingBottom: 0 }}>
-                              <input
-                                type="checkbox"
-                                checked={row.emailEnabled}
-                                onChange={(e) => updateRow(trigger, { emailEnabled: e.target.checked })}
-                              />
-                              <span style={{ fontSize: '12px' }}>Включено</span>
-                            </label>
-                            <label className="field" style={{ margin: 0 }}>
-                              <span>Шаблон UniSender</span>
-                              <select
-                                value={row.emailTemplateId}
-                                onChange={(e) => updateRow(trigger, { emailTemplateId: e.target.value })}
-                                disabled={!row.emailEnabled}
-                              >
-                                <option value="">— не выбран —</option>
-                                {templates.map((t) => (
-                                  <option key={t.id} value={t.id}>
-                                    {t.name}
-                                  </option>
-                                ))}
-                              </select>
-                            </label>
-                          </div>
-                        </td>
+                  <div className="channel-grid">
+                    <div className="channel">
+                      <div className="channel-head">
+                        <span className="channel-name">
+                          <svg width="15" height="15" viewBox="0 0 16 16" fill="none"><rect x="1.5" y="3" width="13" height="10" rx="1.8" stroke="currentColor" strokeWidth="1.3" /><path d="m2 4 6 4.5L14 4" stroke="currentColor" strokeWidth="1.3" /></svg>
+                          Email
+                        </span>
+                        <Switch
+                          checked={row.emailEnabled}
+                          showState
+                          label="Email-уведомление"
+                          onChange={(v) => updateRow(trigger, { emailEnabled: v })}
+                        />
+                      </div>
+                      <label className="field" style={{ margin: 0 }}>
+                        <span>Шаблон UniSender</span>
+                        <select
+                          value={row.emailTemplateId}
+                          onChange={(e) => updateRow(trigger, { emailTemplateId: e.target.value })}
+                          disabled={!row.emailEnabled}
+                        >
+                          <option value="">— не выбран —</option>
+                          {templates.map((t) => (
+                            <option key={t.id} value={t.id}>
+                              {t.name}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                    </div>
 
-                        <td>
-                          <div style={{ display: 'grid', gap: '6px' }}>
-                            <label className="checkbox-field" style={{ paddingBottom: 0 }}>
-                              <input
-                                type="checkbox"
-                                checked={row.telegramEnabled}
-                                onChange={(e) => updateRow(trigger, { telegramEnabled: e.target.checked })}
-                              />
-                              <span style={{ fontSize: '12px' }}>Включено</span>
-                            </label>
-                            <label className="field" style={{ margin: 0 }}>
-                              <span>Тело сообщения (Jinja2)</span>
-                              <textarea
-                                value={row.telegramBody}
-                                onChange={(e) => updateRow(trigger, { telegramBody: e.target.value, previewText: null, previewError: null })}
-                                disabled={!row.telegramEnabled}
-                                rows={3}
-                                style={{
-                                  width: '100%',
-                                  background: 'var(--bg-soft)',
-                                  border: '1px solid var(--border)',
-                                  borderRadius: 'var(--radius-sm)',
-                                  color: 'var(--text)',
-                                  padding: '9px 12px',
-                                  fontFamily: 'monospace',
-                                  fontSize: '12px',
-                                  resize: 'vertical',
-                                }}
-                              />
-                            </label>
-                            <div className="inline-actions">
-                              <button
-                                type="button"
-                                className="secondary small"
-                                onClick={() => void handlePreview(trigger)}
-                                disabled={row.previewLoading || !row.telegramBody}
-                              >
-                                {row.previewLoading ? 'Загрузка…' : 'Предпросмотр'}
-                              </button>
-                            </div>
-                            {row.previewText !== null && (
-                              <div
-                                style={{
-                                  background: 'var(--bg)',
-                                  border: '1px solid var(--border)',
-                                  borderRadius: 'var(--radius-sm)',
-                                  padding: '8px 10px',
-                                  fontSize: '12px',
-                                  whiteSpace: 'pre-wrap',
-                                }}
-                              >
-                                {row.previewText}
-                              </div>
-                            )}
-                            {row.previewError && (
-                              <p className="error-text" style={{ fontSize: '12px' }}>{row.previewError}</p>
-                            )}
-                          </div>
-                        </td>
-
-                        <td>
-                          <div style={{ display: 'grid', gap: '6px' }}>
-                            <button
-                              type="button"
-                              onClick={() => void handleSave(trigger)}
-                              disabled={row.saving}
-                              style={{ whiteSpace: 'nowrap' }}
-                            >
-                              {row.saving ? 'Сохранение…' : 'Сохранить'}
-                            </button>
-                            {row.saveOk && (
-                              <span style={{ fontSize: '12px', color: 'var(--success)' }}>Сохранено</span>
-                            )}
-                            {row.saveError && (
-                              <p className="error-text" style={{ fontSize: '12px' }}>{row.saveError}</p>
-                            )}
-                          </div>
-                        </td>
-                      </tr>
-                    )
-                  })}
-                </tbody>
-              </table>
-            </div>
-          </>
-        )}
-      </article>
+                    <div className="channel">
+                      <div className="channel-head">
+                        <span className="channel-name">
+                          <svg width="15" height="15" viewBox="0 0 16 16" fill="none"><path d="M14 2 1.5 7l4 1.5M14 2l-2 11-4.5-4.5M14 2 7.5 8.5M5.5 8.5v3l2-2" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round" /></svg>
+                          Telegram
+                        </span>
+                        <Switch
+                          checked={row.telegramEnabled}
+                          showState
+                          label="Telegram-уведомление"
+                          onChange={(v) => updateRow(trigger, { telegramEnabled: v })}
+                        />
+                      </div>
+                      <label className="field" style={{ margin: 0 }}>
+                        <span>Тело сообщения (Jinja2)</span>
+                        <textarea
+                          className="code-area"
+                          rows={3}
+                          value={row.telegramBody}
+                          disabled={!row.telegramEnabled}
+                          onChange={(e) => updateRow(trigger, { telegramBody: e.target.value, previewText: null, previewError: null })}
+                        />
+                      </label>
+                      <div className="inline-actions">
+                        <button
+                          type="button"
+                          className="secondary small"
+                          onClick={() => void handlePreview(trigger)}
+                          disabled={row.previewLoading || !row.telegramBody}
+                        >
+                          {row.previewLoading ? 'Загрузка…' : 'Предпросмотр'}
+                        </button>
+                      </div>
+                      {row.previewText !== null && <div className="preview-box">{row.previewText}</div>}
+                      {row.previewError && (
+                        <p className="error-text" style={{ fontSize: '12px' }}>{row.previewError}</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </>
+      )}
     </section>
   )
 }

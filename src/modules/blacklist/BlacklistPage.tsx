@@ -11,6 +11,8 @@ import {
   type BlacklistEntry,
 } from './blacklistApi.ts'
 import { isEffectiveNow } from './effectiveness.ts'
+import { Switch } from '../shared/Switch.tsx'
+import { Icon } from '../shared/Icon.tsx'
 
 const PAGE_SIZE = 50
 
@@ -20,6 +22,13 @@ const FIELD_LABELS: Record<string, string> = {
 
 function getFieldLabel(field: string): string {
   return FIELD_LABELS[field] ?? field
+}
+
+/** Big, colour-coded "is this entry blocking right now" state. */
+function effectiveBadge(entry: BlacklistEntry): { label: string; variant: string } {
+  if (isEffectiveNow(entry)) return { label: 'Блокирует', variant: 'danger' }
+  if (entry.is_active) return { label: 'Запланирована', variant: 'warning' }
+  return { label: 'Выключена', variant: 'muted' }
 }
 
 type Filters = {
@@ -125,7 +134,7 @@ export function BlacklistPage() {
     <section className="stack">
       <header className="page-header">
         <div>
-          <p className="eyebrow">Blacklist</p>
+          <p className="breadcrumb">Данные <span className="sep">/</span> Чёрный список</p>
           <h1>Чёрный список</h1>
         </div>
         <button
@@ -135,6 +144,7 @@ export function BlacklistPage() {
             setModalOpen(true)
           }}
         >
+          <Icon name="plus" size={14} />
           Добавить запись
         </button>
       </header>
@@ -206,24 +216,22 @@ export function BlacklistPage() {
                   {items.map((item) => (
                     <tr key={item.id}>
                       <td>
-                        <span className="tag">{getFieldLabel(item.field)}</span>
+                        <span className="badge badge--plain badge--neutral">{getFieldLabel(item.field)}</span>
                       </td>
-                      <td>{item.value}</td>
+                      <td><span className="id-chip">{item.value}</span></td>
                       <td>
-                        <input
-                          type="checkbox"
+                        <Switch
                           checked={item.is_active}
                           disabled={mutatingId === item.id}
+                          label={item.is_active ? 'Выключить' : 'Включить'}
                           onChange={() => void handleToggleActive(item)}
-                          title={item.is_active ? 'Выключить' : 'Включить'}
                         />
                       </td>
                       <td>
-                        {isEffectiveNow(item) ? (
-                          <span className="tag danger">Блокирует</span>
-                        ) : (
-                          <span className="muted">Нет</span>
-                        )}
+                        {(() => {
+                          const b = effectiveBadge(item)
+                          return <span className={`badge badge--plain badge--${b.variant}`}>{b.label}</span>
+                        })()}
                       </td>
                       <td>
                         {item.active_from !== null
@@ -242,22 +250,26 @@ export function BlacklistPage() {
                         <div className="inline-actions">
                           <button
                             type="button"
-                            className="secondary small"
+                            className="icon-button"
+                            title="Изменить"
+                            aria-label="Изменить"
                             disabled={mutatingId === item.id}
                             onClick={() => {
                               setModalEntry(item)
                               setModalOpen(true)
                             }}
                           >
-                            Изменить
+                            <Icon name="edit" size={15} />
                           </button>
                           <button
                             type="button"
-                            className="secondary small"
+                            className="icon-button"
+                            title="Удалить"
+                            aria-label="Удалить"
                             disabled={mutatingId === item.id}
                             onClick={() => setDeleteCandidate(item)}
                           >
-                            Удалить
+                            <Icon name="trash" size={15} />
                           </button>
                         </div>
                       </td>

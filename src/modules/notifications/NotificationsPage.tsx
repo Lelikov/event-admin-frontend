@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react'
 import { ApiError } from '../shared/api.ts'
-import { Switch } from '../shared/Switch.tsx'
-import { Icon } from '../shared/Icon.tsx'
+import { Switch, Icon } from 'events-design-system'
 import {
   getConfig,
   getUnisenderTemplates,

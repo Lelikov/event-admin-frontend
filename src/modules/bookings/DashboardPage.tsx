@@ -8,7 +8,7 @@ import { getNotificationStatusLabel, getNotificationBounceVariant } from './stat
 import { useTimeZone } from '../settings/useTimeZone.ts'
 import { UserInfo } from '../shared/UserInfo.tsx'
 import { StatusBadge } from '../shared/StatusBadge.tsx'
-import { Icon } from '../shared/Icon.tsx'
+import { Icon } from 'events-design-system'
 
 type Kpis = {
   total: number

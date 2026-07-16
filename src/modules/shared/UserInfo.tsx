@@ -60,8 +60,8 @@ export function UserInfo({ userId, fallback = '—', variant = 'full' }: Props) 
   const { user, loading } = useUser(userId)
 
   if (!userId) return <>{fallback}</>
-  if (loading) return <UserInfoView name={null} email={fallback ?? ''} id={userId ?? undefined} variant={variant} loading />
-  if (!user) return <UserInfoView name={null} email={fallback ?? userId ?? ''} variant={variant} />
+  if (loading) return <span className="user-info-loading">…</span>
+  if (!user) return <span className="user-info-id">{userId.slice(0, 8)}…</span>
 
-  return <UserInfoView name={user.name} email={user.email} variant={variant} />
+  return <UserInfoView name={user.name ?? null} email={user.email} variant={variant} />
 }

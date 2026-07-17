@@ -1,0 +1,166 @@
+/* ─────────────────────────────────────────────
+   EVENT ICONS
+───────────────────────────────────────────── */
+.chat-event-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--primary-pale);
+  border: 1px solid #d0d9f8;
+  font-size: 12px;
+  vertical-align: middle;
+}
+
+.event-status-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  font-size: 11px;
+  vertical-align: middle;
+  background: #f4f6fa;
+}
+.event-status-icon.is-positive { background: var(--success-pale); border-color: #a7f3d0; }
+.event-status-icon.is-negative { background: var(--danger-pale);  border-color: #f8c4cc; }
+.event-status-icon.is-neutral  { background: #f4f6fa; border-color: var(--border); }
+
+/* ─────────────────────────────────────────────
+   TIMELINE
+───────────────────────────────────────────── */
+.timeline {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
+  gap: 8px;
+}
+
+.timeline-item {
+  display: grid;
+  gap: 5px;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--bg);
+}
+
+.timeline-item-organizer { grid-column: 1; }
+.timeline-item-client    { grid-column: 2; }
+
+.timeline-time { margin-left: 8px; font-size: 12px; color: var(--muted); }
+
+/* ─────────────────────────────────────────────
+   DEVICE LIST
+───────────────────────────────────────────── */
+.device-access-list { display: grid; gap: 6px; }
+.device-list { margin: 4px 0 0; padding-left: 18px; }
+.device-list li { margin: 2px 0; }
+
+/* ─────────────────────────────────────────────
+   ROLE BADGES
+───────────────────────────────────────────── */
+.badge--role-organizer { background: #eef1fd; color: #3d5ae3; border-color: #d0d9f8; }
+.badge--role-client    { background: #eef1f5; color: #475569; border-color: #dbe2ec; }
+
+/* ─────────────────────────────────────────────
+   RESPONSIVE (app-specific)
+───────────────────────────────────────────── */
+@media (max-width: 960px) {
+  .timeline-item-organizer,
+  .timeline-item-client { grid-column: 1; }
+  .timeline { grid-template-columns: 1fr; }
+}
+
+/* ── Notifications: segmented control + channel cards ───────────────── */
+.seg { display: inline-flex; gap: 4px; background: #eef1f6; padding: 3px; border-radius: 10px; }
+.seg button {
+  border: none;
+  border-radius: 8px;
+  padding: 7px 16px;
+  font-size: 13px;
+  cursor: pointer;
+  background: transparent;
+  color: var(--muted);
+  font-weight: 500;
+}
+.seg button:hover { background: transparent; color: var(--text); }
+.seg button.is-active {
+  background: #fff;
+  color: var(--text);
+  font-weight: 600;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+}
+.notif-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+}
+.notif-list { display: grid; gap: 12px; }
+.notif-card {
+  background: var(--card);
+  border: 1px solid #e7ebf2;
+  border-radius: var(--radius-lg);
+  padding: 16px 18px;
+}
+.notif-card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+}
+.notif-title { display: flex; align-items: center; gap: 10px; }
+.notif-title h2 { font-size: 14px; font-weight: 600; }
+.notif-code {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--muted);
+  background: #f4f6fa;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: 2px 7px;
+}
+.channel-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.channel {
+  border: 1px solid #eef1f6;
+  border-radius: 10px;
+  padding: 12px 14px;
+  display: grid;
+  gap: 10px;
+  align-content: start;
+}
+.channel-head { display: flex; justify-content: space-between; align-items: center; }
+.channel-name { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: var(--text-2); }
+.channel-name svg { color: var(--muted); }
+.code-area {
+  width: 100%;
+  background: var(--bg-soft);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  padding: 9px 12px;
+  font-family: var(--mono);
+  font-size: 12px;
+  resize: vertical;
+}
+.preview-box {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 8px 10px;
+  font-size: 12px;
+  white-space: pre-wrap;
+}
+@media (max-width: 960px) {
+  .channel-grid { grid-template-columns: 1fr; }
+}

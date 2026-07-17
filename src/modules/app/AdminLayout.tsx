@@ -3,7 +3,7 @@ import { useAuth } from '../auth/useAuth.ts'
 import { decodeJwtPayload } from '../auth/jwt.ts'
 import { navigateTo } from '../shared/routing.ts'
 import { useTimeZone } from '../settings/useTimeZone.ts'
-import { Icon, type IconName } from '../shared/Icon.tsx'
+import { Icon, type IconName } from 'events-design-system'
 
 type AdminLayoutProps = {
   pathname: string

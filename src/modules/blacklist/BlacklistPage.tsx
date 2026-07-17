@@ -11,8 +11,7 @@ import {
   type BlacklistEntry,
 } from './blacklistApi.ts'
 import { isEffectiveNow } from './effectiveness.ts'
-import { Switch } from '../shared/Switch.tsx'
-import { Icon } from '../shared/Icon.tsx'
+import { Switch, Icon } from 'events-design-system'
 
 const PAGE_SIZE = 50
 

@@ -1,3 +1,4 @@
+import { Badge, type BadgeVariant } from 'events-design-system'
 import {
   getBookingStatusLabel,
   getBookingStatusVariant,
@@ -11,9 +12,8 @@ type Props = {
  * Semantic, colour-coded booking-status pill. The colour is derived from the
  * status meaning (created / confirmed / in&nbsp;progress / completed / cancelled /
  * rescheduled), not a single brand tint, so a list of bookings is scannable at
- * a glance. See `.badge--<variant>` in index.css.
+ * a glance. See the `events-design-system` `Badge` component's `.badge--<variant>` styles.
  */
 export function StatusBadge({ status }: Props) {
-  const variant = getBookingStatusVariant(status)
-  return <span className={`badge badge--${variant}`}>{getBookingStatusLabel(status)}</span>
+  return <Badge variant={getBookingStatusVariant(status) as BadgeVariant}>{getBookingStatusLabel(status)}</Badge>
 }

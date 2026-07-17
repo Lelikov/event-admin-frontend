@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import { Icon } from 'events-design-system'
 import { ApiError } from '../shared/api.ts'
-import { getBookingFields, listEventTypes, type EventTypeSummary } from './bookingFieldsApi.ts'
-import { newEditorField, toEditorField, type EditorField } from './fields.ts'
+import { getBookingFields, listEventTypes, putBookingFields, type EventTypeSummary } from './bookingFieldsApi.ts'
+import { buildUpsertItems, newEditorField, toEditorField, validateFields, type EditorField } from './fields.ts'
 import { FieldRow } from './FieldRow.tsx'
 
 export function BookingFieldsPage() {
@@ -13,6 +13,9 @@ export function BookingFieldsPage() {
   const [loadError, setLoadError] = useState<string | null>(null)
   const [fieldsLoading, setFieldsLoading] = useState(false)
   const [fieldsError, setFieldsError] = useState<string | null>(null)
+  const [saving, setSaving] = useState(false)
+  const [saveOk, setSaveOk] = useState(false)
+  const [saveError, setSaveError] = useState<string | null>(null)
   const uidRef = useRef(0)
 
   function nextUid() {
@@ -36,6 +39,8 @@ export function BookingFieldsPage() {
   }, [])
 
   async function selectEventType(id: string) {
+    setSaveOk(false)
+    setSaveError(null)
     setSelectedId(id)
     setFields([])
     setFieldsError(null)
@@ -55,10 +60,14 @@ export function BookingFieldsPage() {
 
   function addField() {
     setFields((prev) => [...prev, newEditorField(nextUid())])
+    setSaveOk(false)
+    setSaveError(null)
   }
 
   function removeField(uid: number) {
     setFields((prev) => prev.filter((f) => f.uid !== uid))
+    setSaveOk(false)
+    setSaveError(null)
   }
 
   function moveField(uid: number, dir: -1 | 1) {
@@ -73,10 +82,34 @@ export function BookingFieldsPage() {
       next.splice(target, 0, moved)
       return next
     })
+    setSaveOk(false)
+    setSaveError(null)
   }
 
   function updateField(uid: number, patch: Partial<EditorField>) {
     setFields((prev) => prev.map((f) => (f.uid === uid ? { ...f, ...patch } : f)))
+    setSaveOk(false)
+    setSaveError(null)
+  }
+
+  async function handleSave() {
+    setSaveError(null)
+    setSaveOk(false)
+    const validationError = validateFields(fields)
+    if (validationError !== null) {
+      setSaveError(validationError)
+      return
+    }
+    setSaving(true)
+    try {
+      const saved = await putBookingFields(selectedId, buildUpsertItems(fields))
+      setFields(saved.map((f) => toEditorField(f, nextUid())))
+      setSaveOk(true)
+    } catch (err) {
+      setSaveError(err instanceof ApiError ? err.message : 'Не удалось сохранить поля')
+    } finally {
+      setSaving(false)
+    }
   }
 
   return (
@@ -142,7 +175,12 @@ export function BookingFieldsPage() {
             <button type="button" data-role="add-field" className="secondary" onClick={addField}>
               <Icon name="plus" size={14} /> Добавить поле
             </button>
+            <button type="button" data-role="save" onClick={() => void handleSave()} disabled={saving}>
+              {saving ? 'Сохранение…' : 'Сохранить'}
+            </button>
           </div>
+          {saveError && <p className="error-text">{saveError}</p>}
+          {saveOk && <p style={{ color: 'var(--success)' }}>Сохранено</p>}
         </>
       )}
     </section>

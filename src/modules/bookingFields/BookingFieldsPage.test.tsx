@@ -7,8 +7,9 @@ vi.mock('./bookingFieldsApi.ts', () => ({
   getBookingFields: vi.fn(),
   putBookingFields: vi.fn(),
 }))
-import { getBookingFields, listEventTypes } from './bookingFieldsApi.ts'
+import { getBookingFields, listEventTypes, putBookingFields } from './bookingFieldsApi.ts'
 import { BookingFieldsPage } from './BookingFieldsPage.tsx'
+import { ApiError } from '../shared/api.ts'
 
 let container: HTMLDivElement
 let root: Root
@@ -123,5 +124,62 @@ describe('BookingFieldsPage', () => {
       await Promise.resolve()
     })
     expect(container.querySelector('input[aria-label="Вариант 1"]')).not.toBeNull()
+  })
+})
+
+describe('BookingFieldsPage — save', () => {
+  it('blocks save and shows an error when a field label is blank', async () => {
+    vi.mocked(getBookingFields).mockResolvedValue([
+      { field_key: 'a', field_type: 'text', label: '', placeholder: null, required: false, options: [], position: 0 },
+    ])
+    mount()
+    await flush()
+    await selectFirstType()
+    const save = container.querySelector<HTMLButtonElement>('button[data-role="save"]')!
+    await act(async () => {
+      save.click()
+      await Promise.resolve()
+    })
+    expect(vi.mocked(putBookingFields)).not.toHaveBeenCalled()
+    expect(container.querySelector('.error-text')?.textContent).toMatch(/№1/)
+  })
+
+  it('PUTs the built payload and shows success', async () => {
+    vi.mocked(getBookingFields).mockResolvedValue([
+      { field_key: 'a', field_type: 'text', label: 'Причина', placeholder: null, required: true, options: [], position: 0 },
+    ])
+    vi.mocked(putBookingFields).mockResolvedValue([
+      { field_key: 'prichina', field_type: 'text', label: 'Причина', placeholder: null, required: true, options: [], position: 0 },
+    ])
+    mount()
+    await flush()
+    await selectFirstType()
+    const save = container.querySelector<HTMLButtonElement>('button[data-role="save"]')!
+    await act(async () => {
+      save.click()
+      await Promise.resolve()
+    })
+    await flush()
+    expect(vi.mocked(putBookingFields)).toHaveBeenCalledWith('e1', [
+      { field_type: 'text', label: 'Причина', placeholder: null, required: true },
+    ])
+    expect(container.textContent).toContain('Сохранено')
+  })
+
+  it('surfaces an upstream 422 as an error', async () => {
+    vi.mocked(getBookingFields).mockResolvedValue([
+      { field_key: 'a', field_type: 'text', label: 'Причина', placeholder: null, required: false, options: [], position: 0 },
+    ])
+    vi.mocked(putBookingFields).mockRejectedValue(new ApiError('Некорректные поля', 422, null, 'scheduling_service_error'))
+    mount()
+    await flush()
+    await selectFirstType()
+    const save = container.querySelector<HTMLButtonElement>('button[data-role="save"]')!
+    await act(async () => {
+      save.click()
+      await Promise.resolve()
+    })
+    await flush()
+    expect(container.querySelector('.error-text')?.textContent).toContain('Некорректные поля')
   })
 })

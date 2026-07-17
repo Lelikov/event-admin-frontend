@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { AdminLayout } from './modules/app/AdminLayout.tsx'
 import { LoginPage } from './modules/auth/LoginPage.tsx'
 import { useAuth } from './modules/auth/useAuth.ts'
+import { BookingFieldsPage } from './modules/bookingFields/BookingFieldsPage.tsx'
 import { BookingDetailsPage } from './modules/bookings/BookingDetailsPage.tsx'
 import { BookingsPage } from './modules/bookings/BookingsPage.tsx'
 import { DashboardPage } from './modules/bookings/DashboardPage.tsx'
@@ -54,6 +55,7 @@ function App() {
       {route.name === 'participants' && <ParticipantsPage />}
       {route.name === 'blacklist' && <BlacklistPage />}
       {route.name === 'notifications' && <NotificationsPage />}
+      {route.name === 'booking-fields' && <BookingFieldsPage />}
       {route.name === 'not-found' && (
         <div className="card">
           <h2>Страница не найдена</h2>

@@ -60,6 +60,13 @@ const NAV_ITEMS: NavItem[] = [
     group: 'Настройки',
     match: (pathname) => pathname === '/notifications',
   },
+  {
+    label: 'Поля записи',
+    path: '/booking-fields',
+    icon: 'edit',
+    group: 'Настройки',
+    match: (pathname) => pathname === '/booking-fields',
+  },
 ]
 
 function sidebarIdentity(jwtToken: string | null): { name: string; email: string | null; initials: string } {

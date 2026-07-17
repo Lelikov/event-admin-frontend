@@ -6,6 +6,7 @@ export type AppRoute =
   | { name: 'participants' }
   | { name: 'blacklist' }
   | { name: 'notifications' }
+  | { name: 'booking-fields' }
   | { name: 'not-found' }
 
 export function parseRoute(pathname: string): AppRoute {
@@ -36,6 +37,10 @@ export function parseRoute(pathname: string): AppRoute {
 
   if (pathname === '/notifications') {
     return { name: 'notifications' }
+  }
+
+  if (pathname === '/booking-fields') {
+    return { name: 'booking-fields' }
   }
 
   return { name: 'not-found' }
